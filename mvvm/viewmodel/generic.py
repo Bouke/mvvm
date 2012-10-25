@@ -1,13 +1,16 @@
 from __future__ import absolute_import
 import sys
+
+import wx
+from wx.lib.pubsub import pub
 from sqlalchemy.exc import IntegrityError
 from traits.has_traits import HasTraits, on_trait_change
 from traits.trait_types import List as TList, Instance, Str, Any
 from traits.traits import Property
-import wx
+
 from mvvm.viewmodel.util import CloseMixin
 from mvvm.viewbinding.command import Command
-from mvvm.viewmodel.wrapper import wrap, Wrapped
+from mvvm.viewmodel.wrapper import wrap, Wrapped, unwrap
 
 class List(CloseMixin, HasTraits):
     """
@@ -30,13 +33,13 @@ class List(CloseMixin, HasTraits):
     objects_selection = TList(HasTraits)
     objects_autocommit = True
     objects_pending = TList(HasTraits)
+    objects_filter_search = Str
     del_cmd = Instance(Command)
 
     title = Str
 
     def _objects_default(self):
-        self.data_source = [wrap(obj) for obj in wx.GetApp().session.query(self.Model)]
-        return self.data_source
+        return [wrap(obj) for obj in wx.GetApp().session.query(self.Model)]
 
     @on_trait_change('objects_selection')
     def _on_selection_changed(self, sel):
@@ -51,7 +54,7 @@ class List(CloseMixin, HasTraits):
             session.delete(object._wrapped)
         try:
             session.commit()
-        except (AssertionError, IntegrityError), e:
+        except (AssertionError, IntegrityError) as e:
             session.rollback()
             # @todo error.user, not a database error
             pub.sendMessage('error.database', message=e.message,
@@ -71,12 +74,12 @@ class List(CloseMixin, HasTraits):
         # @todo handle unwrite when database error, to leave the object in
         #       a valid (previous) state
         try:
-            object.write()
+            object.flush()
             if self.objects_autocommit:
                 self.objects_commit(object)
             else:
                 self.objects_pending.append(object)
-        except (IntegrityError, AssertionError), e:
+        except (IntegrityError, AssertionError) as e:
             wx.GetApp().session.rollback()
             # @todo error.user, not a database error
             pub.sendMessage('error.database', message=e.message,
@@ -127,10 +130,10 @@ class Detail(CloseMixin, HasTraits):
 
     def commit(self):
         try:
-            self._object_proxy.write()
+            self._object_proxy.flush()
             wx.GetApp().session.add(self._object_unwrapped)
             wx.GetApp().session.commit()
-        except (IntegrityError, AssertionError), e:
+        except (IntegrityError, AssertionError) as e:
             wx.GetApp().session.rollback()
             pub.sendMessage('error.database', message=e.message,
                 exc_info=sys.exc_info())
@@ -154,17 +157,15 @@ class Detail(CloseMixin, HasTraits):
         return Command(cancel)
 
     def _get_object(self):
-        if not self._object_proxy:
-            raise NotImplementedError
+        if not self._object_proxy: raise NotImplementedError
         return self._object_proxy
 
     def _set_object(self, object):
         self._object_original = object
 
-        while isinstance(object, Wrapped):
-            object = object._wrapped
-        self._object_unwrapped = object
-        self._object_proxy = object and wrap(object) or None
+        bare = unwrap(object)
+        self._object_unwrapped = bare
+        self._object_proxy = bare and wrap(bare, False) or None
 
     def _title_default(self):
         return self._object_unwrapped.__class__.__name__
