@@ -1,35 +1,17 @@
 from __future__ import absolute_import
 
 from traits.api import HasTraits, Instance, Any
+from traits.trait_types import Str
+from traits.traits import Property
+import model
 
 
 class Wrapped(HasTraits):
-    _wrapped = Instance(Any)
-
-    def __init__(self, wrapped, auto_write=True, **kwargs):
+    def __init__(self, wrapped, **kwargs):
         super(Wrapped, self).__init__()
         self._wrapped = wrapped
-
-        for name in (n for n in dir(wrapped) if not n.startswith('_')):
-            setattr(self, name, getattr(wrapped, name))
-
-        if auto_write:
-            self.on_trait_change(self._auto_write)
-        else:
-            self.changes = {}
-            self.on_trait_change(self._add_change)
-
+        self.changes = {}
         self.trait_set(**kwargs)
-
-    def _auto_write(self, name, value):
-        setattr(self._wrapped, name, value)
-
-    def _add_change(self, name, value):
-        self.changes[name] = value
-
-    def write(self):
-        for name, value in self.changes.items():
-            setattr(self._wrapped, name, value)
 
     def __eq__(self, other):
         if isinstance(other, self._wrapped.__class__):
@@ -41,18 +23,59 @@ class Wrapped(HasTraits):
         return not self.__eq__(other)
 
 
-def wrap(obj, auto_write=False):
-    return wrap_cls(obj.__class__)(obj, auto_write)
+class CachingWrapped(Wrapped):
+    def __init__(self, wrapped, **kwargs):
+        super(CachingWrapped, self).__init__(wrapped, **kwargs)
+        self.changes = {}
 
-cached = {}
-def wrap_cls(cls):
-    if not cls in cached:
-        cached[cls] = type('Wrapped'+cls.__name__, (Wrapped,), {
+    def flush(self):
+        for name, value in self.changes.items():
+            setattr(self._wrapped, name, value)
+
+
+cached = {
+    True: {},
+    False: {},
+}
+
+def getter(name, transparent):
+    if transparent:
+        def _get(self):
+            return getattr(self._wrapped, name)
+    else:
+        def _get(self):
+            if name in self.changes:
+                return self.changes[name]
+            return getattr(self._wrapped, name)
+    return _get
+
+def setter(name, transparent):
+    if transparent:
+        def _set(self, value):
+            setattr(self._wrapped, name, value)
+            self.trait_property_changed(name, value)
+    else:
+        def _set(self, value):
+            self.changes[name] = value
+            self.trait_property_changed(name, value)
+    return _set
+
+def wrap_cls(cls, transparent=True):
+    if not cls in cached[transparent]:
+        cls_name = '%sWrapped%s' % ('Transparent' if transparent else 'Caching',
+                                    cls.__name__)
+        cls_bases = (Wrapped if transparent else CachingWrapped,)
+        cls_dict = {
             '_wrapped': Instance(cls),
-        })
+        }
         for name in (n for n in dir(cls) if not n.startswith('_')):
-            cached[cls].add_class_trait(name, Any)
-    return cached[cls]
+            cls_dict[name] = Property(getter(name, transparent),
+                                      setter(name, transparent))
+        cached[transparent][cls] = type(cls_name, cls_bases, cls_dict)
+    return cached[transparent][cls]
+
+def wrap(obj, transparent=True):
+    return wrap_cls(obj.__class__, transparent)(obj)
 
 def unwrap(obj):
     while isinstance(obj, Wrapped):
