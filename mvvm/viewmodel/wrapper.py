@@ -53,3 +53,8 @@ def wrap_cls(cls):
         for name in (n for n in dir(cls) if not n.startswith('_')):
             cached[cls].add_class_trait(name, Any)
     return cached[cls]
+
+def unwrap(obj):
+    while isinstance(obj, Wrapped):
+        obj = obj._wrapped
+    return obj
