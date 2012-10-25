@@ -35,7 +35,8 @@ class List(CloseMixin, HasTraits):
     title = Str
 
     def _objects_default(self):
-        return [wrap(obj) for obj in wx.GetApp().session.query(self.Model)]
+        self.data_source = [wrap(obj) for obj in wx.GetApp().session.query(self.Model)]
+        return self.data_source
 
     @on_trait_change('objects_selection')
     def _on_selection_changed(self, sel):
