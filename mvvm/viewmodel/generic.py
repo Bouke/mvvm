@@ -33,13 +33,13 @@ class List(CloseMixin, HasTraits):
     objects_selection = TList(HasTraits)
     objects_autocommit = True
     objects_pending = TList(HasTraits)
+    objects_filter_search = Str
     del_cmd = Instance(Command)
 
     title = Str
 
     def _objects_default(self):
-        self.data_source = [wrap(obj) for obj in wx.GetApp().session.query(self.Model)]
-        return self.data_source
+        return [wrap(obj) for obj in wx.GetApp().session.query(self.Model)]
 
     @on_trait_change('objects_selection')
     def _on_selection_changed(self, sel):
