@@ -88,7 +88,7 @@ class List(CloseMixin, HasTraits):
         return True
 
     def objects_commit(self, object):
-        wx.GetApp().session.add(object._wrapped)
+        wx.GetApp().session.add(unwrap(object))
         wx.GetApp().session.commit()
         object.changes.clear()
 

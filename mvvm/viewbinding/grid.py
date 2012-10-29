@@ -126,6 +126,9 @@ class EditableBinding(object):
         self.current_row = 0
         def commit(row):
             object = getattr(self.instance, self.trait)[row]
+            has_changes = getattr(object, 'has_changes')
+            if callable(has_changes): has_changes = has_changes()
+            if not has_changes: return True
             return getattr(instance, trait+'_save')(object)
 
         def on_cell_select(event):
@@ -205,6 +208,8 @@ class EditableBinding(object):
             self.insert_row(row_idx, row)
 
     def insert_row(self, pos, row):
+        assert hasattr(row, 'has_changes'), 'row should have a `has_changes`'
+
         cursor_row = self.field.GetGridCursorRow()
         if pos <= cursor_row:
             self.field.DisableCellEditControl()
