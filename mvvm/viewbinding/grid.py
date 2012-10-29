@@ -126,7 +126,6 @@ class EditableBinding(object):
         self.current_row = 0
         def commit(row):
             object = getattr(self.instance, self.trait)[row]
-            if not object.changes: return True
             return getattr(instance, trait+'_save')(object)
 
         def on_cell_select(event):
