@@ -10,7 +10,6 @@ class Wrapped(HasTraits):
     def __init__(self, wrapped, **kwargs):
         super(Wrapped, self).__init__()
         self._wrapped = wrapped
-        self.changes = {}
         self.trait_set(**kwargs)
 
     def __eq__(self, other):
@@ -25,8 +24,8 @@ class Wrapped(HasTraits):
 
 class CachingWrapped(Wrapped):
     def __init__(self, wrapped, **kwargs):
-        super(CachingWrapped, self).__init__(wrapped, **kwargs)
         self.changes = {}
+        super(CachingWrapped, self).__init__(wrapped, **kwargs)
 
     def flush(self):
         for name, value in self.changes.items():
