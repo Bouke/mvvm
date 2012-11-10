@@ -1,9 +1,5 @@
-from __future__ import absolute_import
-
-from traits.api import HasTraits, Instance, Any
-from traits.trait_types import Str
+from traits.api import HasTraits, Instance
 from traits.traits import Property
-import model
 
 
 class Wrapped(HasTraits):
