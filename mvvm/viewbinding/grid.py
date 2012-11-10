@@ -49,6 +49,13 @@ class Choice(object):
                 self.choices_or_provider)
             if wx.Platform == '__WXMAC__': self.control.Popup()
 
+        self.control.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
+
+    def on_text_enter(self, event):
+        grid = event.EventObject.GrandParent
+        grid.DisableCellEditControl()
+        grid.SetFocus()
+
     def get_display_text(self, data):
         if hasattr(self.choices_or_provider, 'get_display_text'):
             return self.choices_or_provider.get_display_text(data)
