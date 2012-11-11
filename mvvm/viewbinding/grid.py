@@ -206,6 +206,24 @@ class EditableBinding(object):
         instance.on_trait_change(items_listener, trait+'_items', dispatch='ui')
         instance.on_trait_change(trait_listener, trait+'.+', dispatch='ui')
 
+        # GridCellChoiceEditor will send a close command to the dialog when
+        # pressing ESC. To prevent the dialog from closing, this event has to
+        # be intercepted. The workaround is not perfect, it will also veto the
+        # event when the window should be really closed. In that case, the
+        # user has to 'exit' the window twice, the first will disable editing.
+        window = field.Parent
+        while not isinstance(window, wx.TopLevelWindow):
+            window = window.Parent
+        def veto_close(event):
+            focus = window.FindFocus()
+            if isinstance(focus, wx.ComboBox) and focus.GrandParent == field:
+                field.DisableCellEditControl()
+                field.SetFocus()
+                return event.Veto()
+            else:
+                event.Skip()
+        window.Bind(wx.EVT_CLOSE, veto_close)
+
     def get_object(self, row):
         return getattr(self.instance, self.trait)[row]
 
