@@ -175,17 +175,19 @@ class EditableBinding(object):
                 #  * Desired: move cursor, save cell, commit
                 field.DisableCellEditControl()
 
+                row_idx = field.GetGridCursorRow()
+
                 # Create a new row and append it to the object list if a new
                 # row was returned. If None is returned, no new row is created.
                 objects = getattr(instance, trait)
-                if field.GetGridCursorRow() == len(objects) - 1 and callable(creator):
+                if row_idx == len(objects) - 1 and callable(creator):
                     new_row = creator()
                     if not new_row: return
                     objects.append(new_row)
 
                 # Move to the left-most cell of the next row.
-                field.MoveCursorDown(False)
-                field.MoveCursorLeftBlock(False)
+                field.SetGridCursor(row_idx + 1, 0)
+                field.MakeCellVisible(row_idx + 1, 0)
                 return
 
             event.Skip()
