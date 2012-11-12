@@ -39,6 +39,19 @@ class Choice(object):
             while not self.control.IsEmpty():
                 self.control.Delete(0)
 
+        if not value:
+            # On OSX, wx will render the control incorrectly for empty values,
+            # so set a temporary non-empty value to trick the control into
+            # rendering the control correctly and then set the value back to
+            # empty again. The grid will continue to contain the non-empty
+            # value, as setting it back to empty will re-render the control
+            # incorrectly.
+            event.EventObject.SetCellValue(event.Row, event.Col, ' ')
+            def unfix():
+                self.control.SetValue('')
+                self.control.Popup()
+            wx.CallAfter(unfix)
+
     def on_editor_created(self, event):
         self.control = event.GetControl()
         if hasattr(self.choices_or_provider, 'get_choices'):
