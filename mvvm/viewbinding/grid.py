@@ -174,13 +174,17 @@ class EditableBinding(object):
         def on_key_down(event):
             if event.GetKeyCode() in [wx.WXK_DELETE, wx.WXK_BACK,
                                       wx.WXK_NUMPAD_DELETE]:
-                # Remove the value of the current field if delete/backspace
-                # was pressed when in viewing mode.
-                row_idx = field.GetGridCursorRow()
-                col_idx = field.GetGridCursorCol()
-                col = mapping[col_idx]
-                field.SetCellValue(row_idx, col_idx, '')
-                col.set(self.get_object(row_idx), None)
+                if field.GetSelectedRows():
+                    getattr(instance, trait+'_delete')(
+                        [self.get_object(idx) for idx in field.GetSelectedRows()])
+                else:
+                    # Remove the value of the current field if delete/backspace
+                    # was pressed when in viewing mode.
+                    row_idx = field.GetGridCursorRow()
+                    col_idx = field.GetGridCursorCol()
+                    col = mapping[col_idx]
+                    field.SetCellValue(row_idx, col_idx, '')
+                    col.set(self.get_object(row_idx), None)
                 return
 
             elif event.GetKeyCode() in [wx.WXK_NUMPAD_ENTER, wx.WXK_RETURN]:
@@ -256,7 +260,8 @@ class EditableBinding(object):
         if pos <= cursor_row:
             self.field.DisableCellEditControl()
 
-        self.field.InsertRows(pos, 1, False)
+        self.field.InsertRows(pos)
+        self.field.SetRowLabelValue(pos, '')
         for col_idx, col in enumerate(self.mapping):
             if col.editor:
                 # editor C++ would be destroyed if no rows left

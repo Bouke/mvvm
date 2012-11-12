@@ -49,8 +49,17 @@ class List(CloseMixin, HasTraits):
         return Command(self._on_del, False)
 
     def _on_del(self):
+        self.objects_delete(self.objects_selection)
+
+    def _title_default(self):
+        return self.Model.__name__ + 's'
+
+    def objects_create(self):
+        return wrap(self.Model())
+
+    def objects_delete(self, objects):
         session = wx.GetApp().session
-        for object in self.objects_selection:
+        for object in objects:
             session.delete(object._wrapped)
         try:
             session.commit()
@@ -58,17 +67,10 @@ class List(CloseMixin, HasTraits):
             session.rollback()
             # @todo error.user, not a database error
             pub.sendMessage('error.database', message=e.message,
-                exc_info=sys.exc_info())
+                            exc_info=sys.exc_info())
             return
-
-        for object in self.objects_selection:
+        for object in objects:
             self.objects.remove(object)
-
-    def _title_default(self):
-        return self.Model.__name__ + 's'
-
-    def objects_create(self):
-        return wrap(self.Model())
 
     def objects_save(self, object):
         # @todo handle unwrite when database error, to leave the object in
