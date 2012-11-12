@@ -76,6 +76,8 @@ class Choice(object):
             return self.choices_or_provider.get(data, '')
 
     def get_data(self):
+        if self.control.Selection != -1:
+            return self.control.GetClientData(self.control.Selection)
         return self.trait.value
 
 
