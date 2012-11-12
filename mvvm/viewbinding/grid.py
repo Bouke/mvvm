@@ -253,11 +253,18 @@ class EditableBinding(object):
             self.current_row += 1
             self.field.MoveCursorDown(False)
 
-    def update_row(self, pos, row):
+    def update_row(self, row_idx, row):
+        editing = self.field.IsCellEditControlShown()
+        cursor = self.field.GetGridCursorRow(), self.field.GetGridCursorCol()
         for col_idx, col in enumerate(self.mapping):
+            # Do not update the cell that is currently being edited, otherwise
+            # strange results might happen. In the case of GridCellChoiceEditor
+            # a dropdown will be shown regardless of the editor state; the
+            # editor might be in the process of being hidden.
+            if editing and (row_idx, col_idx) == cursor: continue
             value = col.get(row)
             if col.editor: value = col.editor.get_display_text(value)
-            self.field.SetCellValue(pos, col_idx, unicode(value or ''))
+            self.field.SetCellValue(row_idx, col_idx, unicode(value or ''))
 
     def remove_row(self, pos):
         cursor_row = self.field.GetGridCursorRow()
