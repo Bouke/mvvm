@@ -88,10 +88,10 @@ class EditableBinding(object):
 
         # Add empty row if empty object set.
         creator = getattr(instance, trait+'_create', None)
-        while callable(creator) and len(getattr(instance, trait)) < 2:
+        if callable(creator) and not getattr(instance, trait):
             new_row = creator()
-            if not new_row: break
-            getattr(instance, trait).append(new_row)
+            if new_row:
+                getattr(instance, trait).append(new_row)
 
         # Create column labels.
         field.InsertCols(0, len(mapping), False)
