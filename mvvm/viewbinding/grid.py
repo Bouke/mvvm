@@ -62,7 +62,10 @@ class Choice(object):
 
     def get_data(self):
         if self.control.Selection != -1:
-            return self.control.GetClientData(self.control.Selection)
+            if hasattr(self.choices_or_provider, 'get_choices'):
+                return self.control.GetClientData(self.control.Selection)
+            else:
+                return self.binding.choices.keys()[self.control.Selection]
         return self.trait.value
 
 
