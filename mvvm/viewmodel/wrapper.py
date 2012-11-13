@@ -59,6 +59,11 @@ def setter(name, transparent):
     return _set
 
 def wrap_cls(cls, transparent=True):
+    """
+    Wraps a class as either Wrapped or CachingWrapped.
+
+    :rtype: type
+    """
     if not cls in cached[transparent]:
         cls_name = '%sWrapped%s' % ('Transparent' if transparent else 'Caching',
                                     cls.__name__)
@@ -73,6 +78,11 @@ def wrap_cls(cls, transparent=True):
     return cached[transparent][cls]
 
 def wrap(obj, transparent=True):
+    """
+    Wraps an object as either Wrapped or CachingWrapped.
+
+    :rtype: Wrapped
+    """
     return wrap_cls(obj.__class__, transparent)(obj)
 
 def unwrap(obj):
