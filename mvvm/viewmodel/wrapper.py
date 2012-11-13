@@ -20,7 +20,7 @@ class Wrapped(HasTraits):
 
 class CachingWrapped(Wrapped):
     def __init__(self, wrapped, **kwargs):
-        self.changes = {}
+        self.changes = kwargs
         super(CachingWrapped, self).__init__(wrapped, **kwargs)
 
     def flush(self):
