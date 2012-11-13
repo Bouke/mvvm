@@ -39,19 +39,6 @@ class Choice(object):
             while not self.control.IsEmpty():
                 self.control.Delete(0)
 
-        if not value:
-            # On OSX, wx will render the control incorrectly for empty values,
-            # so set a temporary non-empty value to trick the control into
-            # rendering the control correctly and then set the value back to
-            # empty again. The grid will continue to contain the non-empty
-            # value, as setting it back to empty will re-render the control
-            # incorrectly.
-            event.EventObject.SetCellValue(event.Row, event.Col, ' ')
-            def unfix():
-                self.control.SetValue('')
-                self.control.Popup()
-            wx.CallAfter(unfix)
-
     def on_editor_created(self, event):
         self.control = event.GetControl()
         if hasattr(self.choices_or_provider, 'get_choices'):
@@ -60,8 +47,6 @@ class Choice(object):
         else:
             self.binding = ChoiceBinding(self.control, self.trait, 'value',
                 self.choices_or_provider)
-            if wx.Platform == '__WXMAC__': self.control.Popup()
-
         self.control.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
 
     def on_text_enter(self, event):
@@ -105,6 +90,7 @@ class EditableBinding(object):
             col = mapping[event.GetCol()]
             if col.editor:
                 col.editor.on_editor_created(event)
+            event.Skip()
         field.Bind(wx.grid.EVT_GRID_EDITOR_CREATED, on_editor_created)
 
         # Setting changed values to the underlying object.  There are two
@@ -227,23 +213,6 @@ class EditableBinding(object):
         instance.on_trait_change(items_listener, trait+'_items', dispatch='ui')
         instance.on_trait_change(trait_listener, trait+'.+', dispatch='ui')
 
-        # GridCellChoiceEditor will send a close command to the dialog when
-        # pressing ESC. To prevent the dialog from closing, this event has to
-        # be intercepted. The workaround is not perfect, it will also veto the
-        # event when the window should be really closed. In that case, the
-        # user has to 'exit' the window twice, the first will disable editing.
-        window = field.Parent
-        while not isinstance(window, wx.TopLevelWindow):
-            window = window.Parent
-        def veto_close(event):
-            focus = window.FindFocus()
-            if isinstance(focus, wx.ComboBox) and focus.GrandParent == field:
-                field.DisableCellEditControl()
-                field.SetFocus()
-                return event.Veto()
-            else:
-                event.Skip()
-        window.Bind(wx.EVT_CLOSE, veto_close)
 
     def get_object(self, row):
         return getattr(self.instance, self.trait)[row]
