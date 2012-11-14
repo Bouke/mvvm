@@ -68,6 +68,7 @@ class ChoiceBinding(object):
                 self.field.Bind(wx.EVT_RADIOBOX, self.update_model)
         else:
             field.SetItems(self.choices.values())
+        self.update_view(new=getattr(self.instance, self.trait))
 
     def update_view(self, new):
         if len(self.choices) == 0: return
