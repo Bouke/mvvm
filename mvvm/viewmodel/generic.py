@@ -3,7 +3,7 @@ import sys
 
 import wx
 from wx.lib.pubsub import pub
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError, DatabaseError
 from traits.has_traits import HasTraits, on_trait_change
 from traits.trait_types import List as TList, Instance, Str, Any
 from traits.traits import Property
@@ -135,7 +135,7 @@ class Detail(CloseMixin, HasTraits):
             self._object_proxy.flush()
             wx.GetApp().session.add(self._object_unwrapped)
             wx.GetApp().session.commit()
-        except (IntegrityError, AssertionError) as e:
+        except (AssertionError, DatabaseError) as e:
             wx.GetApp().session.rollback()
             pub.sendMessage('error.database', message=e.message,
                 exc_info=sys.exc_info())
