@@ -226,7 +226,15 @@ class DateBinding(object):
 class FileBinding(object):
     def __init__(self, field, instance, trait):
         self.field, self.instance, self.trait = (field, instance, trait)
+        instance.on_trait_change(self.update_view, trait, dispatch='ui')
+        self.update_view(getattr(instance, trait))
         self.field.Bind(wx.EVT_FILEPICKER_CHANGED, self.update_model)
 
+    def update_view(self, new):
+        if self.field.GetPath() != new:
+            self.field.SetPath(new)
+
     def update_model(self, event):
-        setattr(self.instance, self.trait, event.GetPath())
+        new = event.GetPath()
+        if new != getattr(self.instance, self.trait):
+            setattr(self.instance, self.trait, new)
