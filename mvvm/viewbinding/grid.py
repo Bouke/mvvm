@@ -221,7 +221,8 @@ class EditableBinding(object):
         return getattr(self.instance, self.trait)[row]
 
     def update_view(self):
-        self.field.DeleteRows(0, self.field.GetNumberRows(), False)
+        if self.field.GetNumberRows():
+            self.field.DeleteRows(0, self.field.GetNumberRows(), False)
         for row_idx, row in enumerate(getattr(self.instance, self.trait)):
             self.insert_row(row_idx, row)
 
