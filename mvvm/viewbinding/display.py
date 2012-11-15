@@ -17,6 +17,11 @@ class ShowBinding(object):
 
         # resize frame if @min_best_size'd
         if hasattr(self.field.TopLevelParent, 'MinBestSize'):
+            # First, invalidate all parents
+            parent = self.field.Parent
+            while parent:
+                parent.InvalidateBestSize()
+                parent = parent.Parent
             self.field.TopLevelParent.SetSize(
                 self.field.TopLevelParent.MinBestSize())
 
