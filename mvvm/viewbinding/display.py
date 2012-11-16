@@ -77,7 +77,7 @@ class ListBinding(object):
         self.update_values()
 
     def update_values(self):
-        self.field.SetItemCount(len(getattr(*self.trait)))
+        self.field.SetItemCount(self.table.GetNumberRows())
 
     def on_get_item_text(self, row_idx, col_idx):
         return self.table.GetValue(row_idx, col_idx)

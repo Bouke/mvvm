@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import sys
+from sqlalchemy.orm import Query
 
 import wx
 from wx.lib.pubsub import pub
@@ -9,28 +10,10 @@ from traits.trait_types import List as TList, Instance, Str, Any
 from traits.traits import Property
 
 import model
-from mvvm.viewbinding.table import ModelTable
+from mvvm.viewbinding.table import ListTable, QueryTable
 from mvvm.viewmodel.util import CloseMixin
 from mvvm.viewbinding.command import Command
 from mvvm.viewmodel.wrapper import wrap, unwrap
-
-
-class ListSearchMixin(HasTraits):
-    search = Str
-
-    def __init__(self, **kwargs):
-        super(ListSearchMixin, self).__init__(**kwargs)
-        self.on_trait_change(self.do_search, 'search', dispatch='new')
-
-    def do_search(self, search):
-        if search:
-            search = '%%%s%%' % search
-            self.objects = [wrap(obj) for obj in self.get_search_query(search)]
-        else:
-            self.objects = self._objects_default()
-
-    def get_search_query(self, search):
-        raise NotImplementedError
 
 
 class List(CloseMixin, HasTraits):
@@ -56,16 +39,18 @@ class List(CloseMixin, HasTraits):
     objects_autocommit = True
     objects_pending = TList(HasTraits)
     objects_filter_search = Str
-    objects_table = Instance(ModelTable)
+    objects_table = Instance(ListTable)
     del_cmd = Instance(Command)
 
     title = Str
 
-    def get_query(self):
-        return model.DBSession().query(self.Model)
+    def create_query(self):
+        return Query(self.Model)
 
     def _objects_default(self):
-        return [wrap(obj) for obj in self.get_query()]
+        query = self.create_query()
+        query.session = wx.GetApp().session
+        return [wrap(obj) for obj in query]
 
     @on_trait_change('objects_selection')
     def _on_selection_changed(self, sel):
@@ -122,11 +107,45 @@ class List(CloseMixin, HasTraits):
         object.changes.clear()
 
     def _objects_table_default(self):
-        return ModelTable((self, 'objects'), self.mapping)
+        return ListTable((self, 'objects'), self.mapping)
 
     @on_trait_change('objects.+,objects_items')
     def on_table_update(self):
         wx.CallAfter(self.objects_table.ResetView)
+
+
+class ListSearchMixin(HasTraits):
+    search = Str
+
+    def __init__(self, **kwargs):
+        super(ListSearchMixin, self).__init__(**kwargs)
+        self.on_trait_change(self.do_search, 'search', dispatch='new')
+
+    def do_search(self, search):
+        if search:
+            self.objects_query = self.create_search_query('%%%s%%' % search)
+        else:
+            self.objects_query = self.create_query()
+
+    def create_search_query(self, search):
+        raise NotImplementedError
+
+
+class QueryList(List):
+    objects_query = Instance(Query)
+
+    def __init__(self, **kwargs):
+        super(QueryList, self).__init__(**kwargs)
+        self.remove_trait('objects')
+
+    def _objects_default(self):
+        return []
+
+    def _objects_query_default(self):
+        return self.create_query()
+
+    def _objects_table_default(self):
+        return QueryTable((self, 'objects_query'), self.mapping)
 
 
 class Detail(CloseMixin, HasTraits):
