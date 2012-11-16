@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError, DatabaseError
 from traits.has_traits import HasTraits, on_trait_change
 from traits.trait_types import List as TList, Instance, Str, Any
 from traits.traits import Property
+from mvvm.viewbinding.table import ModelTable
 
 from mvvm.viewmodel.util import CloseMixin
 from mvvm.viewbinding.command import Command
@@ -29,11 +30,13 @@ class List(CloseMixin, HasTraits):
         class name of the Model + 's'
     """
     Model = None
+    mapping = None
     objects = TList(HasTraits)
     objects_selection = TList(HasTraits)
     objects_autocommit = True
     objects_pending = TList(HasTraits)
     objects_filter_search = Str
+    objects_table = Instance(ModelTable)
     del_cmd = Instance(Command)
 
     title = Str
@@ -50,6 +53,7 @@ class List(CloseMixin, HasTraits):
 
     def _on_del(self):
         self.objects_delete(self.objects_selection)
+        self.objects_selection = []
 
     def _title_default(self):
         return self.Model.__name__ + 's'
@@ -93,6 +97,13 @@ class List(CloseMixin, HasTraits):
         wx.GetApp().session.add(unwrap(object))
         wx.GetApp().session.commit()
         object.changes.clear()
+
+    def _objects_table_default(self):
+        return ModelTable((self, 'objects'), self.mapping)
+
+    @on_trait_change('objects.+,objects_items')
+    def on_table_update(self):
+        wx.CallAfter(self.objects_table.ResetView)
 
 
 class Detail(CloseMixin, HasTraits):

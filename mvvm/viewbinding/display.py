@@ -54,69 +54,53 @@ class FocusBinding(object):
 
 
 class ListBinding(object):
-    def __init__(self, field, instance, trait, mapping):
-        self.field, self.instance, self.trait, self.mapping = (
-            field, instance, trait, mapping)
+    def __init__(self, field, trait):
+        self.field, self.trait = field, trait
+        self.table = getattr(trait[0], trait[1]+"_table")
+        self.table.ResetView = self.reset_view
+        self.table.UpdateValues = self.update_values
+        self.field.on_get_item_text = self.on_get_item_text
+        self.reset_view()
+        field.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_selection_update_view)
+        field.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_selection_update_view)
+        trait[0].on_trait_change(self.on_selection_update_model,
+                                 trait[1]+'_selection[]')
 
-        for col_idx, attribute in enumerate(mapping):
-            field.InsertColumn(col_idx, *attribute[1:])
-        self.update_view()
+    def reset_view(self):
+        columns = [self.table.GetColLabelValue(col_idx)
+                   for col_idx in range(self.table.GetNumberCols()-1)]
+        # No implementation for dynamic column changing
+        if self.field.GetColumnCount() != len(columns):
+            for col_idx, col_label in enumerate(columns):
+                self.field.InsertColumn(col_idx, col_label)
+        self.update_values()
 
-        # sync with grid.py[196:208]
-        def items_listener(new):
-            for row_idx, row in enumerate(new.added):
-                self.insert_row(new.index+row_idx, row)
-            for row_idx, row in enumerate(new.removed):
-                self.remove_row(new.index+row_idx)
-        def trait_listener(tl_instance, tl_trait, tl_value):
-            if tl_instance == instance:
-                self.update_view()
-            else:
-                self.update_row(getattr(instance, trait).index(tl_instance),
-                    tl_instance)
-        instance.on_trait_change(items_listener, trait+'_items', dispatch='ui')
-        instance.on_trait_change(trait_listener, trait+'.+', dispatch='ui')
+    def update_values(self):
+        self.field.SetItemCount(len(getattr(*self.trait)))
 
-        if hasattr(instance, trait+'_selection'):
-            field.Bind(wx.EVT_LIST_ITEM_SELECTED, self.selection_changed)
-            field.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.selection_changed)
+    def on_get_item_text(self, row_idx, col_idx):
+        return self.table.GetValue(row_idx, col_idx)
 
-    def update_view(self):
-        self.field.TopLevelParent.Freeze()
-        self.field.DeleteAllItems()
-        for row_idx, row in enumerate(getattr(self.instance, self.trait)):
-            self.insert_row(row_idx, row)
-        self.field.TopLevelParent.Thaw()
+    def get_selected_indexes(self):
+        indexes = set()
+        row_idx = self.field.GetFirstSelected()
+        while row_idx != -1:
+            indexes.add(row_idx)
+            row_idx = self.field.GetNextSelected(row_idx)
+        return indexes
 
-        # Fire faux selection as the selection probably changed
-        self.selection_changed(None)
+    def on_selection_update_view(self, event):
+        setattr(self.trait[0], self.trait[1]+'_selection',
+                [self.table.GetRow(idx) for idx in self.get_selected_indexes()])
+        event.Skip()
 
-    def insert_row(self, pos, row):
-        self.field.InsertStringItem(pos, '')
-        self.update_row(pos, row)
-
-    def update_row(self, pos, row):
-        for col_idx, attribute in enumerate(self.mapping):
-            attribute = attribute[0]
-            disp_attr = 'get_%s_display' % attribute
-            if hasattr(row, disp_attr) and callable(getattr(row, disp_attr)):
-                value = getattr(row, disp_attr)()
-            else:
-                value = getattr(row, attribute)
-            self.field.SetStringItem(pos, col_idx, unicode(value or ''))
-
-    def remove_row(self, pos):
-        self.field.DeleteItem(pos)
-
-    def selection_changed(self, event):
-        selection = []
-        index = self.field.GetFirstSelected()
-        while index != -1:
-            selection.append(getattr(self.instance, self.trait)[index])
-            index = self.field.GetNextItem(index, wx.LIST_NEXT_ALL,
-                                           wx.LIST_STATE_SELECTED)
-        setattr(self.instance, self.trait+'_selection', selection)
-        if event: event.Skip()
+    def on_selection_update_model(self, new):
+        cur = self.get_selected_indexes()
+        new = set([self.table.GetRowIndex(obj) for obj in new])
+        for idx in cur-new:  # deselect
+            self.field.SetItemState(idx, 0, wx.LIST_STATE_SELECTED|wx.LIST_STATE_FOCUSED)
+        for idx in new-cur:  # select
+            self.field.SetItemState(idx, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
 
 
 class LabelBinding(object):
