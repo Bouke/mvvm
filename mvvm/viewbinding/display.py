@@ -1,3 +1,4 @@
+import time
 import wx
 
 
@@ -68,7 +69,7 @@ class ListBinding(object):
 
     def reset_view(self):
         columns = [self.table.GetColLabelValue(col_idx)
-                   for col_idx in range(self.table.GetNumberCols()-1)]
+                   for col_idx in range(self.table.GetNumberCols())]
         # No implementation for dynamic column changing
         if self.field.GetColumnCount() != len(columns):
             for col_idx, col_label in enumerate(columns):

@@ -3,15 +3,35 @@ import sys
 
 import wx
 from wx.lib.pubsub import pub
-from sqlalchemy.exc import IntegrityError, OperationalError, DatabaseError
+from sqlalchemy.exc import IntegrityError, DatabaseError
 from traits.has_traits import HasTraits, on_trait_change
 from traits.trait_types import List as TList, Instance, Str, Any
 from traits.traits import Property
-from mvvm.viewbinding.table import ModelTable
 
+import model
+from mvvm.viewbinding.table import ModelTable
 from mvvm.viewmodel.util import CloseMixin
 from mvvm.viewbinding.command import Command
-from mvvm.viewmodel.wrapper import wrap, Wrapped, unwrap
+from mvvm.viewmodel.wrapper import wrap, unwrap
+
+
+class ListSearchMixin(HasTraits):
+    search = Str
+
+    def __init__(self, **kwargs):
+        super(ListSearchMixin, self).__init__(**kwargs)
+        self.on_trait_change(self.do_search, 'search', dispatch='new')
+
+    def do_search(self, search):
+        if search:
+            search = '%%%s%%' % search
+            self.objects = [wrap(obj) for obj in self.get_search_query(search)]
+        else:
+            self.objects = self._objects_default()
+
+    def get_search_query(self, search):
+        raise NotImplementedError
+
 
 class List(CloseMixin, HasTraits):
     """
@@ -41,8 +61,11 @@ class List(CloseMixin, HasTraits):
 
     title = Str
 
+    def get_query(self):
+        return model.DBSession().query(self.Model)
+
     def _objects_default(self):
-        return [wrap(obj) for obj in wx.GetApp().session.query(self.Model)]
+        return [wrap(obj) for obj in self.get_query()]
 
     @on_trait_change('objects_selection')
     def _on_selection_changed(self, sel):
