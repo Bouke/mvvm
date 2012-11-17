@@ -124,11 +124,10 @@ class ListSearchMixin(HasTraits):
 
     def __init__(self, **kwargs):
         super(ListSearchMixin, self).__init__(**kwargs)
-        self.on_trait_change(self.do_search, 'search', dispatch='new')
 
-    def do_search(self, search):
+    def _search_changed(self, search):
         if search:
-            self.objects_query = self.create_search_query('%%%s%%' % search)
+            self.objects_query = self.create_search_query(u'%%%s%%' % search)
         else:
             self.objects_query = self.create_query()
 
