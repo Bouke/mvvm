@@ -61,13 +61,17 @@ class ListBinding(object):
         self.table.mapping = mapping
         self.table.ResetView = self.update_values
         self.table.UpdateValues = self.update_values
+
+        assert self.field.on_get_item_text, 'Cannot override on_get_item_text'
+        assert self.field.HasFlag(wx.LC_VIRTUAL), 'Field is not virtual'
         self.field.on_get_item_text = self.on_get_item_text
         for col_idx, col_data in enumerate(mapping):
             self.field.InsertColumn(col_idx, *col_data[1:])
+
         self.update_values()
-        field.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_selection_update_view)
-        field.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_selection_update_view)
-        trait[0].on_trait_change(self.on_selection_update_model,
+        field.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_view_selection_changed)
+        field.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_view_selection_changed)
+        trait[0].on_trait_change(self.on_model_selection_changed,
                                  trait[1]+'_selection[]')
 
     def update_values(self):
@@ -84,12 +88,12 @@ class ListBinding(object):
             row_idx = self.field.GetNextSelected(row_idx)
         return indexes
 
-    def on_selection_update_view(self, event):
+    def on_view_selection_changed(self, event):
         setattr(self.trait[0], self.trait[1]+'_selection',
                 [self.table.GetRow(idx) for idx in self.get_selected_indexes()])
         event.Skip()
 
-    def on_selection_update_model(self, new):
+    def on_model_selection_changed(self, new):
         cur = self.get_selected_indexes()
         new = set([self.table.GetRowIndex(obj) for obj in new])
         for idx in cur-new:  # deselect
