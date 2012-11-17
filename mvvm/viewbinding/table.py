@@ -35,10 +35,10 @@ class TableHelperMixin(object):
 
 
 class ListTable(PyGridTableBase, TableHelperMixin):
-    def __init__(self, trait, mapping):
+    def __init__(self, trait, mapping=None):
         super(ListTable, self).__init__()
         self._trait = trait
-        self._mapping = mapping
+        self.mapping = mapping
 
     def GetNumberRows(self):
         return len(getattr(*self._trait))
@@ -50,10 +50,10 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         return len(self._mapping)
 
     def GetColLabelValue(self, col_idx):
-        return self._mapping[col_idx][1]
+        return self.mapping[col_idx][1]
 
     def GetValue(self, row_idx, col_idx):
-        attribute = self._mapping[col_idx][0]
+        attribute = self.mapping[col_idx][0]
         row = self.GetRow(row_idx)
         disp_attr = 'get_%s_display' % attribute
         if hasattr(row, disp_attr) and callable(getattr(row, disp_attr)):
@@ -70,11 +70,11 @@ class ListTable(PyGridTableBase, TableHelperMixin):
 class QueryTable(ListTable, traits.HasTraits):
     _rows_cache = traits.Dict(traits.Int, traits.HasTraits)
 
-    def __init__(self, query, mapping):
+    def __init__(self, query, mapping=None):
         PyGridTableBase.__init__(self)
         traits.HasTraits.__init__(self)
         self._query = query
-        self._mapping = mapping
+        self.mapping = mapping
         self._update_cache()
         self.page_size = 50
         query[0].on_trait_change(self.reload, query[1])

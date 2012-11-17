@@ -55,26 +55,20 @@ class FocusBinding(object):
 
 
 class ListBinding(object):
-    def __init__(self, field, trait):
+    def __init__(self, field, trait, mapping):
         self.field, self.trait = field, trait
         self.table = getattr(trait[0], trait[1]+"_table")
-        self.table.ResetView = self.reset_view
+        self.table.mapping = mapping
+        self.table.ResetView = self.update_values
         self.table.UpdateValues = self.update_values
         self.field.on_get_item_text = self.on_get_item_text
-        self.reset_view()
+        for col_idx, col_data in enumerate(mapping):
+            self.field.InsertColumn(col_idx, *col_data[1:])
+        self.update_values()
         field.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_selection_update_view)
         field.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_selection_update_view)
         trait[0].on_trait_change(self.on_selection_update_model,
                                  trait[1]+'_selection[]')
-
-    def reset_view(self):
-        columns = [self.table.GetColLabelValue(col_idx)
-                   for col_idx in range(self.table.GetNumberCols())]
-        # No implementation for dynamic column changing
-        if self.field.GetColumnCount() != len(columns):
-            for col_idx, col_label in enumerate(columns):
-                self.field.InsertColumn(col_idx, col_label)
-        self.update_values()
 
     def update_values(self):
         self.field.SetItemCount(self.table.GetNumberRows())

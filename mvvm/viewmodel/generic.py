@@ -150,7 +150,7 @@ class QueryList(List):
         return self.create_query()
 
     def _objects_table_default(self):
-        return QueryTable((self, 'objects_query'), self.mapping)
+        return QueryTable((self, 'objects_query'))
 
     def objects_delete(self, objects):
         if self._objects_do_delete(objects):
