@@ -108,4 +108,7 @@ class QueryTable(ListTable):
         return self._rows_cache[row_idx]
 
     def GetRowIndex(self, object):
-        return None
+        for idx, row in self._rows_cache.iteritems():
+            if row == object:
+                return idx
+        raise IndexError('object was not in cache')

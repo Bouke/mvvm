@@ -69,20 +69,24 @@ class List(CloseMixin, HasTraits):
     def objects_create(self):
         return wrap(self.Model())
 
-    def objects_delete(self, objects):
+    def _objects_do_delete(self, objects):
         session = wx.GetApp().session
         for object in objects:
             session.delete(object._wrapped)
         try:
             session.commit()
+            return True
         except (AssertionError, IntegrityError) as e:
             session.rollback()
             # @todo error.user, not a database error
             pub.sendMessage('error.database', message=e.message,
                             exc_info=sys.exc_info())
-            return
-        for object in objects:
-            self.objects.remove(object)
+            return False
+
+    def objects_delete(self, objects):
+        if self._objects_do_delete(objects):
+            for object in objects:
+                self.objects.remove(object)
 
     def objects_save(self, object):
         # @todo handle unwrite when database error, to leave the object in
@@ -146,6 +150,10 @@ class QueryList(List):
 
     def _objects_table_default(self):
         return QueryTable((self, 'objects_query'), self.mapping)
+
+    def objects_delete(self, objects):
+        if self._objects_do_delete(objects):
+            self.objects_table.on_query_change()
 
 
 class Detail(CloseMixin, HasTraits):
