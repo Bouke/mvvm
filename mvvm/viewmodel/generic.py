@@ -73,7 +73,7 @@ class List(CloseMixin, HasTraits):
     def _objects_do_delete(self, objects):
         session = wx.GetApp().session
         for object in objects:
-            session.delete(object._wrapped)
+            session.delete(unwrap(object))
         try:
             session.commit()
             return True
