@@ -1,4 +1,4 @@
-from traits.has_traits import HasTraits
+import traits.api as traits
 import wx
 from wx.grid import PyGridTableBase
 import model
@@ -67,26 +67,30 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         return getattr(*self._trait).index(object)
 
 
-class QueryTable(ListTable):
+class QueryTable(ListTable, traits.HasTraits):
+    _rows_cache = traits.Dict(traits.Int, traits.HasTraits)
+
     def __init__(self, query, mapping):
-        super(ListTable, self).__init__()
+        PyGridTableBase.__init__(self)
+        traits.HasTraits.__init__(self)
         self._query = query
         self._mapping = mapping
-        self.update_cache()
+        self._update_cache()
         self.page_size = 50
-        query[0].on_trait_change(self.on_query_change, query[1])
+        query[0].on_trait_change(self.reload, query[1])
+        self.on_trait_change(self.UpdateValues, '_rows_cache.+')
 
-    def update_cache(self):
+    def _update_cache(self):
         query = getattr(*self._query)
         query.session = model.DBSession()
         self._rows_cache = {}
         self._num_rows = query.count()
 
-    def on_query_change(self):
-        self.update_cache()
+    def reload(self):
+        self._update_cache()
         self.UpdateValues()
 
-    def assert_in_cache(self, row_idx):
+    def _assert_in_cache(self, row_idx):
         if row_idx in self._rows_cache:
             return
 
@@ -104,7 +108,7 @@ class QueryTable(ListTable):
         return self._num_rows
 
     def GetRow(self, row_idx):
-        self.assert_in_cache(row_idx)
+        self._assert_in_cache(row_idx)
         return self._rows_cache[row_idx]
 
     def GetRowIndex(self, object):

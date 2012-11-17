@@ -154,7 +154,7 @@ class QueryList(List):
 
     def objects_delete(self, objects):
         if self._objects_do_delete(objects):
-            self.objects_table.on_query_change()
+            self.objects_table.reload()
 
 
 class Detail(CloseMixin, HasTraits):
