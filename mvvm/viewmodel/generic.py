@@ -1,15 +1,14 @@
 from __future__ import absolute_import
 import sys
-from sqlalchemy.orm import Query
 
 import wx
 from wx.lib.pubsub import pub
 from sqlalchemy.exc import IntegrityError, DatabaseError
+from sqlalchemy.orm import Query
 from traits.has_traits import HasTraits, on_trait_change
 from traits.trait_types import List as TList, Instance, Str, Any
 from traits.traits import Property
 
-import model
 from mvvm.viewbinding.table import ListTable, QueryTable
 from mvvm.viewmodel.util import CloseMixin
 from mvvm.viewbinding.command import Command
@@ -34,12 +33,14 @@ class List(CloseMixin, HasTraits):
     """
     Model = None
     mapping = None
+
+    autocommit = True
+    pending_commit = TList(HasTraits)
+
     objects = TList(HasTraits)
     objects_selection = TList(HasTraits)
-    objects_autocommit = True
-    objects_pending = TList(HasTraits)
-    objects_filter_search = Str
     objects_table = Instance(ListTable)
+
     del_cmd = Instance(Command)
 
     title = Str
@@ -93,10 +94,10 @@ class List(CloseMixin, HasTraits):
         #       a valid (previous) state
         try:
             object.flush()
-            if self.objects_autocommit:
+            if self.autocommit:
                 self.objects_commit(object)
             else:
-                self.objects_pending.append(object)
+                self.pending_commit.append(object)
         except (IntegrityError, AssertionError) as e:
             wx.GetApp().session.rollback()
             # @todo error.user, not a database error
