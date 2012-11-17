@@ -82,7 +82,8 @@ class QueryTable(ListTable, traits.HasTraits):
 
     def _update_cache(self):
         query = getattr(*self._query)
-        query.session = model.DBSession()
+        query.session = wx.GetApp().session
+
         self._rows_cache = {}
         self._num_rows = query.count()
 
@@ -95,7 +96,7 @@ class QueryTable(ListTable, traits.HasTraits):
             return
 
         query = getattr(*self._query)
-        query.session = model.DBSession()
+        query.session = wx.GetApp().session
 
         start = max(row_idx-self.page_size, 0)
         stop = min(row_idx+self.page_size, self._num_rows)
