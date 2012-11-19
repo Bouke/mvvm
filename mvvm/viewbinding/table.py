@@ -40,6 +40,17 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         self._trait = trait
         self.mapping = mapping
 
+        trait[0].on_trait_change(self._trait_listener, trait[1]+'.+', dispatch='ui')
+        trait[0].on_trait_change(self._items_listener, trait[1]+'_items', dispatch='ui')
+
+    def _trait_listener(self, tl_instance, tl_trait, tl_value):
+        if tl_instance == self._trait[0]:
+            return self._items_listener()
+        self.UpdateValues()
+
+    def _items_listener(self):
+        self.ResetView()
+
     def GetNumberRows(self):
         return len(getattr(*self._trait))
 
