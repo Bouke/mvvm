@@ -90,6 +90,7 @@ class QueryTable(ListTable, traits.HasTraits):
         self.page_size = 50
         query[0].on_trait_change(self.reload, query[1])
         self.on_trait_change(self.UpdateValues, '_rows_cache.+')
+        self.wrapper = wrap
 
     def _update_cache(self):
         query = getattr(*self._query)
@@ -114,7 +115,7 @@ class QueryTable(ListTable, traits.HasTraits):
 
         for idx, row in enumerate(query[start:stop]):
             if start+idx not in self._rows_cache:
-                self._rows_cache[start+idx] = wrap(row)
+                self._rows_cache[start+idx] = self.wrapper(row)
 
     def GetNumberRows(self):
         return self._num_rows
