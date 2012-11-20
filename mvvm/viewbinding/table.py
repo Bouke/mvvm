@@ -58,7 +58,7 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         return ''
 
     def GetNumberCols(self):
-        return len(self._mapping)
+        return len(self.mapping)
 
     def GetColLabelValue(self, col_idx):
         return self.mapping[col_idx][1]
@@ -77,55 +77,62 @@ class ListTable(PyGridTableBase, TableHelperMixin):
     def GetRowIndex(self, object):
         return getattr(*self._trait).index(object)
 
+    def SetValue(self, row_idx, col_idx, value):
+        attribute = self.mapping[col_idx][0]
+        row = self.GetRow(row_idx)
+        setattr(row, attribute, value)
 
-class QueryTable(ListTable, traits.HasTraits):
-    _rows_cache = traits.Dict(traits.Int, traits.HasTraits)
+    def SaveRow(self, row_idx):
+        row = self.GetRow(row_idx)
+        if not row.has_changes: return True
+        return getattr(self._trait[0], '%s_save' % self._trait[1])(row)
 
-    def __init__(self, query, mapping=None):
+
+class QueryTable(ListTable):
+    class Cache(traits.HasTraits):
+        rows = traits.Dict(traits.Int, traits.HasTraits)
+
+    def __init__(self, trait, mapping=None):
         PyGridTableBase.__init__(self)
-        traits.HasTraits.__init__(self)
-        self._query = query
+        self._trait = trait
         self.mapping = mapping
+        self._cache = self.Cache()
         self._update_cache()
         self.page_size = 50
-        query[0].on_trait_change(self.reload, query[1])
-        self.on_trait_change(self.UpdateValues, '_rows_cache.+')
+        self._trait[0].on_trait_change(self.reload, '%s_query' % self._trait[1])
+        self._cache.on_trait_change(self.UpdateValues, 'rows.+')
         self.wrapper = wrap
 
     def _update_cache(self):
-        query = getattr(*self._query)
-        query.session = wx.GetApp().session
-
-        self._rows_cache = {}
-        self._num_rows = query.count()
+        self._query = getattr(self._trait[0], '%s_query' % self._trait[1])
+        self._query.session = wx.GetApp().session
+        self._cache.rows = {}
+        self._num_rows = self._query.count()
 
     def reload(self):
         self._update_cache()
         self.UpdateValues()
 
     def _assert_in_cache(self, row_idx):
-        if row_idx in self._rows_cache:
+        if row_idx in self._cache.rows:
             return
-
-        query = getattr(*self._query)
-        query.session = wx.GetApp().session
 
         start = max(row_idx-self.page_size, 0)
         stop = min(row_idx+self.page_size, self._num_rows)
 
-        for idx, row in enumerate(query[start:stop]):
-            if start+idx not in self._rows_cache:
-                self._rows_cache[start+idx] = self.wrapper(row)
+        for idx, row in enumerate(self._query[start:stop]):
+            if start+idx not in self._cache.rows:
+                self._cache.rows[start+idx] = self.wrapper(row)
 
     def GetNumberRows(self):
         return self._num_rows
 
     def GetRow(self, row_idx):
         self._assert_in_cache(row_idx)
-        return self._rows_cache[row_idx]
+        return self._cache.rows[row_idx]
 
     def GetRowIndex(self, object):
-        for idx, row in self._rows_cache.iteritems():
+        for idx, row in self._cache.rows.iteritems():
             if row == object:
                 return idx
         raise IndexError('object was not in cache')

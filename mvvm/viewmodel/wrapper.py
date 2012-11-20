@@ -27,6 +27,7 @@ class CachingWrapped(Wrapped):
         for name, value in self.changes.items():
             setattr(self._wrapped, name, value)
 
+    @property
     def has_changes(self):
         return bool(self.changes)
 
