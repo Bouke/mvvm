@@ -1,23 +1,52 @@
 import wx.grid
 
 class GridBinding(object):
-    def __init__(self, field, trait, mapping, commit_on='grid'):
+    """Binds a Grid to a Table
+
+    Example code for saving a grid when closing the window:
+
+        window.Bind(wx.EVT_CLOSE, close)
+
+        def close(evt):
+            if grid.IsCellEditControlEnabled():
+                grid.DisableCellEditControl()
+                wx.CallAfter(window.Close)
+                return evt.Veto()
+            if not table.SaveGrid():
+                return evt.Veto()
+            evt.Skip()
+    """
+    def __init__(self, field, trait, mapping, commit_on='row'):
         self.field = field
         self.trait = trait
-        self.table = getattr(trait[0], trait[1]+"_table")
-        self.table.mapping = mapping
         self.commit_on = commit_on
 
-#        self._mapping = mapping
+        self.table = getattr(trait[0], trait[1]+"_table")
+        self.table.mapping = mapping
         self.field.SetTable(self.table)
 
+        self.field.Bind(wx.grid.EVT_GRID_CELL_CHANGED, self.on_cell_changed)
         self.field.Bind(wx.grid.EVT_GRID_SELECT_CELL, self.on_select_cell)
 
-        self._pending_select = None
+        self.veto_next_select_cell = False
+
+    def on_cell_changed(self, evt):
+        if self.commit_on == 'cell':
+            if not self.table.SaveCell(evt.Row, evt.Col):
+                # Veto do_select_cell as that would in turn trigger
+                # on_select_cell and re-run the savecell, and resulting in
+                # the same error message.
+                self.veto_next_select_cell = True
 
     def do_select_cell(self, row, col):
-        self.field.SetGridCursor(row, col)
-        self.field.Refresh() # current cell might not be highlighted
+        # See `on_cell_changed` on why this method can be `Veto`ed.
+        if not self.veto_next_select_cell:
+            self.field.SetGridCursor(row, col)
+        self.veto_next_select_cell = False
+        # The grid does not always render the grid correctly when some events
+        # are `Veto`ed, so it needs a `Refresh` for the active cell to be
+        # highlighted.
+        self.field.Refresh()
 
     def on_select_cell(self, evt):
         if self.commit_on == 'grid':
@@ -27,16 +56,27 @@ class GridBinding(object):
         to_ = (evt.Row, evt.Col)
 
         if self.field.IsCellEditControlEnabled():
+            # @todo By inspecting the current value of the control, we can
+            # check if the value is to be accepted; thus .Veto() before the
+            # celleditor is actually disabled.
             self.field.DisableCellEditControl()
             wx.CallAfter(self.do_select_cell, *to_)
             return evt.Veto()
 
-        if self.commit_on == 'cell' and from_ != to_:
+        elif self.commit_on == 'cell' and from_ != to_:
+            # Try to save the cell, even though it will fail as on_cell_changed
+            # will only handle the happy flow. Failing to save will show the
+            # previous error message (again) and remembers the user of the
+            # faulty input.
+            if not self.table.SaveCell(*from_):
+                return evt.Veto()
+
+        elif self.commit_on == 'row' and from_[0] != to_[0]:
             if not self.table.SaveRow(from_[0]):
                 return evt.Veto()
 
-        if self.commit_on == 'row' and from_[0] != to_[0]:
-            if not self.table.SaveRow(from_[0]):
+        elif self.commit_on == 'col' and from_[1] != to_[1]:
+            if not self.table.SaveCol(from_[1]):
                 return evt.Veto()
 
         evt.Skip()

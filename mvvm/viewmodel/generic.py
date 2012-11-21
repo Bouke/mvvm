@@ -89,15 +89,16 @@ class List(CloseMixin, HasTraits):
             for object in objects:
                 self.objects.remove(object)
 
-    def objects_save(self, object):
+    def objects_save(self, objects):
         # @todo handle unwrite when database error, to leave the object in
         #       a valid (previous) state
         try:
-            object.flush()
+            for obj in objects: obj.flush()
             if self.autocommit:
-                self.objects_commit(object)
+                self.objects_commit(objects)
             else:
-                self.pending_commit.append(object)
+                for obj in objects:
+                    self.pending_commit.append(obj)
         except (IntegrityError, AssertionError) as e:
             wx.GetApp().session.rollback()
             # @todo error.user, not a database error
@@ -106,10 +107,12 @@ class List(CloseMixin, HasTraits):
             return False
         return True
 
-    def objects_commit(self, object):
-        wx.GetApp().session.add(unwrap(object))
+    def objects_commit(self, objects):
+        for obj in objects:
+            wx.GetApp().session.add(unwrap(obj))
         wx.GetApp().session.commit()
-        object.changes.clear()
+        for obj in objects:
+            obj.changes.clear()
 
     def _objects_table_default(self):
         return ListTable((self, 'objects'), self.mapping)

@@ -39,9 +39,14 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         super(ListTable, self).__init__()
         self._trait = trait
         self.mapping = mapping
+        self.saver = getattr(self._trait[0], '%s_save' % self._trait[1], None)
+        self._setup()
 
-        trait[0].on_trait_change(self._trait_listener, trait[1]+'.+', dispatch='ui')
-        trait[0].on_trait_change(self._items_listener, trait[1]+'_items', dispatch='ui')
+    def _setup(self):
+        self._trait[0].on_trait_change(self._trait_listener,
+                                       self._trait[1]+'.+', dispatch='ui')
+        self._trait[0].on_trait_change(self._items_listener,
+                                       self._trait[1]+'_items', dispatch='ui')
 
     def _trait_listener(self, tl_instance, tl_trait, tl_value):
         if tl_instance == self._trait[0]:
@@ -82,20 +87,26 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         row = self.GetRow(row_idx)
         setattr(row, attribute, value)
 
+    def SaveCell(self, row_idx, col_idx):
+        return self.SaveRow(row_idx)
+
     def SaveRow(self, row_idx):
         row = self.GetRow(row_idx)
         if not row.has_changes: return True
-        return getattr(self._trait[0], '%s_save' % self._trait[1])(row)
+        return self.saver([row])
+
+    def SaveCol(self, col_idx):
+        raise NotImplementedError()
+
+    def SaveGrid(self):
+        return self.saver(getattr(*self._trait))
 
 
 class QueryTable(ListTable):
     class Cache(traits.HasTraits):
         rows = traits.Dict(traits.Int, traits.HasTraits)
 
-    def __init__(self, trait, mapping=None):
-        PyGridTableBase.__init__(self)
-        self._trait = trait
-        self.mapping = mapping
+    def _setup(self):
         self._cache = self.Cache()
         self._update_cache()
         self.page_size = 50
@@ -136,3 +147,6 @@ class QueryTable(ListTable):
             if row == object:
                 return idx
         raise IndexError('object was not in cache')
+
+    def SaveGrid(self):
+        return self.saver(self._cache.rows.values())
