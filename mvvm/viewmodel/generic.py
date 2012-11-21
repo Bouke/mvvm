@@ -88,6 +88,7 @@ class List(CloseMixin, HasTraits):
         if self._objects_do_delete(objects):
             for object in objects:
                 self.objects.remove(object)
+            return True
 
     def objects_save(self, objects):
         # @todo handle unwrite when database error, to leave the object in

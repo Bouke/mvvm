@@ -23,10 +23,13 @@ class GridBinding(object):
 
         self.table = getattr(trait[0], trait[1]+"_table")
         self.table.mapping = mapping
+        self.table.commit_on = commit_on
         self.field.SetTable(self.table)
 
         self.field.Bind(wx.grid.EVT_GRID_CELL_CHANGED, self.on_cell_changed)
         self.field.Bind(wx.grid.EVT_GRID_SELECT_CELL, self.on_select_cell)
+
+        self.field.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
 
         self.veto_next_select_cell = False
 
@@ -37,15 +40,17 @@ class GridBinding(object):
                 # on_select_cell and re-run the savecell, and resulting in
                 # the same error message.
                 self.veto_next_select_cell = True
+        # The grid does not always render the grid correctly when a dialog  was
+        # shown, so it needs a `Refresh` for the active cell to be highlighted.
+        self.field.Refresh()
 
     def do_select_cell(self, row, col):
         # See `on_cell_changed` on why this method can be `Veto`ed.
         if not self.veto_next_select_cell:
             self.field.SetGridCursor(row, col)
         self.veto_next_select_cell = False
-        # The grid does not always render the grid correctly when some events
-        # are `Veto`ed, so it needs a `Refresh` for the active cell to be
-        # highlighted.
+        # The grid does not always render the grid correctly when a dialog  was
+        # shown, so it needs a `Refresh` for the active cell to be highlighted.
         self.field.Refresh()
 
     def on_select_cell(self, evt):
@@ -80,3 +85,38 @@ class GridBinding(object):
                 return evt.Veto()
 
         evt.Skip()
+
+    def on_key_down(self, event):
+        if event.GetKeyCode() in (wx.WXK_DELETE, wx.WXK_BACK, wx.WXK_NUMPAD_DELETE):
+            if self.field.GetSelectedRows():
+                self.table.DeleteRows(self.field.GetSelectedRows())
+                self.field.ClearSelection()
+            else:
+                # Remove the value of the current field if delete/backspace
+                # was pressed when in viewing mode.
+                self.table.SetValue(self.field.GridCursorRow,
+                                    self.field.GridCursorCol, None)
+                # Might need to save changes when commit_on = cell
+                self.on_cell_changed(wx.grid.GridEvent(
+                    self.field.GetId(), wx.grid.wxEVT_GRID_CELL_CHANGED,
+                    self.field, self.field.GridCursorRow,
+                    self.field.GridCursorCol))
+            return
+        elif event.GetKeyCode() in [wx.WXK_NUMPAD_ENTER, wx.WXK_RETURN]:
+            # Need to stop cell editing first, saving the cell value before
+            # trying to commit.
+            #  * Normal: move cursor, commit, save cell
+            #  * Desired: move cursor, save cell, commit
+            self.field.DisableCellEditControl()
+
+            # Create a new row after the current row. On success, move the
+            # cursor to the left-most cell of the new row.
+            if self.field.GridCursorRow == self.table.GetNumberRows() - 1:
+                self.table.CreateRow()
+            self.field.SetGridCursor(self.field.GridCursorRow + 1, 0)
+            self.field.MakeCellVisible(self.field.GridCursorRow, 0)
+
+            # Move to the left-most cell of the next row.
+            return
+
+        event.Skip()

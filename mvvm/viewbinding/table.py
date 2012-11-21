@@ -39,14 +39,32 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         super(ListTable, self).__init__()
         self._trait = trait
         self.mapping = mapping
+        self.creator = getattr(self._trait[0], '%s_create' % self._trait[1], None)
         self.saver = getattr(self._trait[0], '%s_save' % self._trait[1], None)
+        self.deleter = getattr(self._trait[0], '%s_delete' % self._trait[1], None)
         self._setup()
+        self.commit_on = 'grid'
 
     def _setup(self):
         self._trait[0].on_trait_change(self._trait_listener,
                                        self._trait[1]+'.+', dispatch='ui')
         self._trait[0].on_trait_change(self._items_listener,
                                        self._trait[1]+'_items', dispatch='ui')
+        self._deleted = []
+        self._created = []
+        self._modified = []
+        self._reindex()
+
+    def _reindex(self):
+        self._objects = getattr(*self._trait)
+        self._index = [obj for obj in self._objects
+                       if obj not in self._deleted] + self._created
+        for row in self._deleted:
+            if row not in self._objects:
+                self._deleted.remove(row)
+        for row in self._modified:
+            if row not in self._objects:
+                self._modified.remove(row)
 
     def _trait_listener(self, tl_instance, tl_trait, tl_value):
         if tl_instance == self._trait[0]:
@@ -54,10 +72,11 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         self.UpdateValues()
 
     def _items_listener(self):
+        self._reindex()
         self.ResetView()
 
     def GetNumberRows(self):
-        return len(getattr(*self._trait))
+        return len(self._index)
 
     def GetRowLabelValue(self, row_idx):
         return ''
@@ -77,10 +96,10 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         return getattr(row, attribute)
 
     def GetRow(self, row_idx):
-        return getattr(*self._trait)[row_idx]
+        return self._index[row_idx]
 
     def GetRowIndex(self, object):
-        return getattr(*self._trait).index(object)
+        return self._index.index(object)
 
     def SetValue(self, row_idx, col_idx, value):
         attribute = self.mapping[col_idx][0]
@@ -93,13 +112,49 @@ class ListTable(PyGridTableBase, TableHelperMixin):
     def SaveRow(self, row_idx):
         row = self.GetRow(row_idx)
         if not row.has_changes: return True
-        return self.saver([row])
+        if self.commit_on == 'grid':
+            if row not in self._modified:
+                self._modified.append(row)
+        else:
+            if self.saver([row]):
+                if row in self._created:
+                    self._created.remove(row)
+                    getattr(*self._trait).append(row)
+                return True
 
     def SaveCol(self, col_idx):
         raise NotImplementedError()
 
     def SaveGrid(self):
-        return self.saver(getattr(*self._trait))
+        # @todo save / delete in transaction
+        self.saver(self._modified)
+        self.deleter(self._deleted)
+
+    def DeleteRows(self, rows):
+        if self.commit_on == 'grid':
+            for row_idx in rows:
+                self._deleted.append(self.GetRow(row_idx))
+        else:
+            objects = [self.GetRow(row_idx) for row_idx in rows]
+            self._delete_rows(objects)
+        self._reindex()
+        self.ResetView()
+
+    def _delete_rows(self, objects):
+        if self.deleter([obj for obj in objects if obj in self._objects]):
+            for obj in [obj for obj in objects if obj not in self._objects]:
+                self._created.remove(obj)
+
+    def DeleteCol(self, col_idx):
+        raise NotImplementedError()
+
+    def CreateRow(self):
+        row = self.creator()
+        if row:
+            self._created.append(row)
+            self._reindex()
+            self.ResetView()
+            return self._index.index(row)
 
 
 class QueryTable(ListTable):
@@ -150,3 +205,9 @@ class QueryTable(ListTable):
 
     def SaveGrid(self):
         return self.saver(self._cache.rows.values())
+
+    def DeleteRows(self, row_idx):
+        raise NotImplementedError()
+
+    def CreateRow(self):
+        raise NotImplementedError
