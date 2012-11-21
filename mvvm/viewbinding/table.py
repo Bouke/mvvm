@@ -128,7 +128,7 @@ class ListTable(PyGridTableBase, TableHelperMixin):
     def SaveGrid(self):
         # @todo save / delete in transaction
         self.saver(self._modified)
-        self.deleter(self._deleted)
+        self._delete_rows(self._deleted)
 
     def DeleteRows(self, rows):
         if self.commit_on == 'grid':
@@ -142,8 +142,11 @@ class ListTable(PyGridTableBase, TableHelperMixin):
 
     def _delete_rows(self, objects):
         if self.deleter([obj for obj in objects if obj in self._objects]):
-            for obj in [obj for obj in objects if obj not in self._objects]:
-                self._created.remove(obj)
+            for obj in objects:
+                if obj in self._created:
+                    self._created.remove(obj)
+                if obj in self._modified:
+                    self._created.remove(obj)
 
     def DeleteCol(self, col_idx):
         raise NotImplementedError()
