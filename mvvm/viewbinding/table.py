@@ -91,9 +91,12 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         attribute = self.mapping[col_idx][0]
         row = self.GetRow(row_idx)
         disp_attr = 'get_%s_display' % attribute
+        # FIXME use a sane default renderer/editor which does the string casting
         if hasattr(row, disp_attr) and callable(getattr(row, disp_attr)):
-            return getattr(row, disp_attr)()
-        return getattr(row, attribute)
+            return unicode(getattr(row, disp_attr)())
+            #return getattr(row, disp_attr)()
+        return unicode(getattr(row, attribute))
+        #return getattr(row, attribute)
 
     def GetRow(self, row_idx):
         return self._index[row_idx]
