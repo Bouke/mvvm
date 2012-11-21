@@ -85,10 +85,10 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         return len(self.mapping)
 
     def GetColLabelValue(self, col_idx):
-        return self.mapping[col_idx][1]
+        return self.mapping[col_idx].label
 
     def GetValue(self, row_idx, col_idx):
-        attribute = self.mapping[col_idx][0]
+        attribute = self.mapping[col_idx].attribute
         row = self.GetRow(row_idx)
         disp_attr = 'get_%s_display' % attribute
         # FIXME use a sane default renderer/editor which does the string casting

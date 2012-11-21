@@ -1,4 +1,17 @@
 import wx.grid
+from mvvm.viewbinding import display
+
+
+class Column(display.Column):
+    def __init__(self, attribute, label, width=None, editor=None, h_align=None,
+                 v_align=None):
+        super(Column, self).__init__(attribute, label, width, h_align)
+        self.attribute = attribute
+        self.label = label
+        self.width = width
+        self.editor = editor
+        self.v_align = v_align
+
 
 class GridBinding(object):
     """Binds a Grid to a Table
@@ -20,9 +33,10 @@ class GridBinding(object):
         self.field = field
         self.trait = trait
         self.commit_on = commit_on
+        self.mapping = [Column.init(col) for col in mapping]
 
         self.table = getattr(trait[0], trait[1]+"_table")
-        self.table.mapping = mapping
+        self.table.mapping = self.mapping
         self.table.commit_on = commit_on
         self.field.SetTable(self.table)
 

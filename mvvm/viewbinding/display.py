@@ -54,9 +54,24 @@ class FocusBinding(object):
             self.field.SetFocus()
 
 
+class Column(object):
+    def __init__(self, attribute, label, width=-1, h_align=0):
+        self.attribute = attribute
+        self.label = label
+        self.width = width
+        self.h_align = h_align
+
+    @classmethod
+    def init(cls, args):
+        if isinstance(args, cls):
+            return args
+        return cls(*args)
+
+
 class ListBinding(object):
     def __init__(self, field, trait, mapping):
         self.field, self.trait = field, trait
+        mapping = [Column.init(col) for col in mapping]
         self.table = getattr(trait[0], trait[1]+"_table")
         self.table.mapping = mapping
         self.table.ResetView = self.update_values
@@ -65,8 +80,8 @@ class ListBinding(object):
         assert self.field.on_get_item_text, 'Cannot override on_get_item_text'
         assert self.field.HasFlag(wx.LC_VIRTUAL), 'Field is not virtual'
         self.field.on_get_item_text = self.on_get_item_text
-        for col_idx, col_data in enumerate(mapping):
-            self.field.InsertColumn(col_idx, *col_data[1:])
+        for col_idx, col in enumerate(mapping):
+            self.field.InsertColumn(col_idx, col.label, col.h_align, col.width)
 
         self.update_values()
         field.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_view_selection_changed)
