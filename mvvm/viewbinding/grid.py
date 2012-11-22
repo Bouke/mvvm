@@ -15,6 +15,7 @@ class GridBinding(object):
 
         def close(evt):
             if grid.IsCellEditControlEnabled():
+                grid.SaveEditControlValue()
                 grid.DisableCellEditControl()
                 wx.CallAfter(window.Close)
                 return evt.Veto()
@@ -88,6 +89,7 @@ class GridBinding(object):
             # @todo By inspecting the current value of the control, we can
             # check if the value is to be accepted; thus .Veto() before the
             # celleditor is actually disabled.
+            self.field.SaveEditControlValue()
             self.field.DisableCellEditControl()
             wx.CallAfter(self.do_select_cell, *to_)
             return evt.Veto()
@@ -131,6 +133,7 @@ class GridBinding(object):
             # trying to commit.
             #  * Normal: move cursor, commit, save cell
             #  * Desired: move cursor, save cell, commit
+            self.field.SaveEditControlValue()
             self.field.DisableCellEditControl()
 
             # Create a new row after the current row. On success, move the
