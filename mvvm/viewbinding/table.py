@@ -91,17 +91,17 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         return self.mapping[col_idx].label
 
     def GetValue(self, row_idx, col_idx):
-        value = self.GetValueAsObject(row_idx, col_idx)
-        if value is None:
-            return ''
+        attribute = self.mapping[col_idx].attribute
+        row = self.GetRow(row_idx)
+        value = getattr(row, attribute)
+        disp_attr = 'get_%s_display' % attribute
+        if hasattr(row, disp_attr) and callable(getattr(row, disp_attr)):
+            value = getattr(row, disp_attr)(value)
         return unicode(value)
 
     def GetValueAsObject(self, row_idx, col_idx):
         attribute = self.mapping[col_idx].attribute
         row = self.GetRow(row_idx)
-        disp_attr = 'get_%s_display' % attribute
-        if hasattr(row, disp_attr) and callable(getattr(row, disp_attr)):
-            return getattr(row, disp_attr)()
         return getattr(row, attribute)
 
     def GetTypeName(self, row_idx, col_idx):

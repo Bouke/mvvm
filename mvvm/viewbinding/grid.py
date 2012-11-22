@@ -189,17 +189,25 @@ class ChoiceType(object):
             super(ChoiceType.Editor, self).SetSize(rect)
 
         def BeginEdit(self, row, col, grid):
+            # @todo use Table.GetValueAsObject
             value = grid.GetCellValue(row, col)
-            self.GetControl().SetValue(value)
+            if self.provider:
+                self.GetControl().SetValue(value)
+            else:
+                self.GetControl().SetStringSelection(value)
             self.GetControl().SetFocus()
-            self.GetControl().Popup()
+            if self.provider:
+                self.GetControl().Popup()
 
         def Reset(self):
             # @todo use wx_patch [ESC] to reset value to original text
             raise NotImplementedError()
 
         def EndEdit(self, row, col, grid, prev):
-            value = self.GetControl().GetClientData(self.GetControl().Selection)
+            if self.provider:
+                value = self.GetControl().GetClientData(self.GetControl().Selection)
+            else:
+                value = self.choices.keys()[self.GetControl().Selection]
             grid.GetTable().SetValueAsObject(row, col, value)
 
     def __init__(self, choices=None, provider=None):
