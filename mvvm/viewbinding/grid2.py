@@ -196,8 +196,8 @@ class ChoiceType(object):
             raise NotImplementedError()
 
         def EndEdit(self, row, col, grid, prev):
-            grid.GetTable().SetValue(row, col,
-                                     self.GetControl().GetClientData(self.GetControl().Selection))
+            value = self.GetControl().GetClientData(self.GetControl().Selection)
+            grid.GetTable().SetValueAsObject(row, col, value)
 
     def __init__(self, choices=None, provider=None):
         self.trait = self.Trait()
