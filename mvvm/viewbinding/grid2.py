@@ -1,7 +1,9 @@
+import wx
 import wx.grid
+import traits.api as traits
+
 from mvvm.viewbinding import display
-
-
+from mvvm.viewbinding.interactive import ChoiceBinding, ComboBinding
 
 
 class GridBinding(object):
@@ -150,3 +152,57 @@ class Column(display.Column):
         self.label = label
         self.width = width
         self.type_name = type_name
+
+
+class ChoiceType(object):
+    class Trait(traits.HasTraits):
+        value = traits.Any
+
+    class Editor(wx.grid.PyGridCellEditor):
+        def __init__(self, choices=None, provider=None):
+            super(ChoiceType.Editor, self).__init__()
+            self.trait = ChoiceType.Trait()
+            self.choices = choices
+            self.provider = provider
+
+        def Create(self, parent, id, evtHandler):
+            if self.provider:
+                self.SetControl(wx.ComboBox(parent, id))
+                self.binding = ComboBinding(self.GetControl(),
+                                            self.trait, 'value',
+                                            self.provider)
+            else:
+                self.SetControl(wx.Choice(parent, id))
+                self.binding = ChoiceBinding(self.GetControl(),
+                                             self.trait, 'value',
+                                             self.choices)
+            self.GetControl().PushEventHandler(evtHandler)
+
+        def SetSize(self, rect):
+            # Adjust for minimal height of the control
+            height = self.GetControl().GetBestSize()[1]
+            rect.y = rect.y + rect.height / 2 - max(rect.height, height) / 2
+            rect.height = max(rect.height, height)
+            super(ChoiceType.Editor, self).SetSize(rect)
+
+        def BeginEdit(self, row, col, grid):
+            value = grid.GetCellValue(row, col)
+            self.GetControl().SetValue(value)
+            self.GetControl().SetFocus()
+            self.GetControl().Popup()
+
+        def Reset(self):
+            # @todo use wx_patch [ESC] to reset value to original text
+            raise NotImplementedError()
+
+        def EndEdit(self, row, col, grid, prev):
+            grid.GetTable().SetValue(row, col,
+                                     self.GetControl().GetClientData(self.GetControl().Selection))
+
+    def __init__(self, choices=None, provider=None):
+        self.trait = self.Trait()
+        self.choices = choices
+        self.provider = provider
+
+        self.editor = self.Editor(choices=choices, provider=provider)
+        self.renderer = wx.grid.GridCellStringRenderer()
