@@ -100,7 +100,7 @@ class List(CloseMixin, HasTraits):
             else:
                 for obj in objects:
                     self.pending_commit.append(obj)
-        except (IntegrityError, AssertionError) as e:
+        except (AttributeError, IntegrityError, AssertionError) as e:
             wx.GetApp().session.rollback()
             # @todo error.user, not a database error
             pub.sendMessage('error.database', message=e.message,

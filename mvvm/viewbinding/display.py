@@ -55,11 +55,11 @@ class FocusBinding(object):
 
 
 class Column(object):
-    def __init__(self, attribute, label, width=-1, h_align=0):
+    def __init__(self, attribute, label, width=-1, align=0):
         self.attribute = attribute
         self.label = label
         self.width = width
-        self.h_align = h_align
+        self.align = align
 
     @classmethod
     def init(cls, args):
@@ -81,7 +81,7 @@ class ListBinding(object):
         assert self.field.HasFlag(wx.LC_VIRTUAL), 'Field is not virtual'
         self.field.on_get_item_text = self.on_get_item_text
         for col_idx, col in enumerate(mapping):
-            self.field.InsertColumn(col_idx, col.label, col.h_align, col.width)
+            self.field.InsertColumn(col_idx, col.label, col.align, col.width)
 
         self.update_values()
         field.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_view_selection_changed)

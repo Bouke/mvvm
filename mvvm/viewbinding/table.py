@@ -8,7 +8,8 @@ from mvvm.viewmodel.wrapper import wrap
 class TableHelperMixin(object):
     def ResetView(self):
         """Trim/extend the control's rows and update all values"""
-        grid = self.GetView()
+        # @fixme self.grid should always be available for bound tables
+        grid = getattr(self, 'grid', self.GetView())
         grid.BeginBatch()
         changes = [
             (grid.GetNumberRows(), self.GetNumberRows(),
@@ -31,7 +32,9 @@ class TableHelperMixin(object):
     def UpdateValues( self ):
         """Update all displayed values"""
         msg = wx.grid.GridTableMessage(self, wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES)
-        self.GetView().ProcessTableMessage(msg)
+        # @fixme self.grid should always be available for bound tables
+        grid = getattr(self, 'grid', self.GetView())
+        grid.ProcessTableMessage(msg)
 
 
 class ListTable(PyGridTableBase, TableHelperMixin):
@@ -98,6 +101,9 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         return unicode(getattr(row, attribute))
         #return getattr(row, attribute)
 
+    def GetTypeName(self, row_idx, col_idx):
+        return self.mapping[col_idx].type_name
+
     def GetRow(self, row_idx):
         return self._index[row_idx]
 
@@ -105,7 +111,7 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         return self._index.index(object)
 
     def SetValue(self, row_idx, col_idx, value):
-        attribute = self.mapping[col_idx][0]
+        attribute = self.mapping[col_idx].attribute
         row = self.GetRow(row_idx)
         setattr(row, attribute, value)
 

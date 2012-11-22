@@ -2,15 +2,6 @@ import wx.grid
 from mvvm.viewbinding import display
 
 
-class Column(display.Column):
-    def __init__(self, attribute, label, width=None, editor=None, h_align=None,
-                 v_align=None):
-        super(Column, self).__init__(attribute, label, width, h_align)
-        self.attribute = attribute
-        self.label = label
-        self.width = width
-        self.editor = editor
-        self.v_align = v_align
 
 
 class GridBinding(object):
@@ -29,23 +20,40 @@ class GridBinding(object):
                 return evt.Veto()
             evt.Skip()
     """
-    def __init__(self, field, trait, mapping, commit_on='row'):
+    def __init__(self, field, trait, mapping, types=None, commit_on='row'):
         self.field = field
         self.trait = trait
         self.commit_on = commit_on
         self.mapping = [Column.init(col) for col in mapping]
+        self.types = types or {}
 
         self.table = getattr(trait[0], trait[1]+"_table")
         self.table.mapping = self.mapping
         self.table.commit_on = commit_on
+        self.table.grid = self.field
         self.field.SetTable(self.table)
+        self.on_table_message()
 
         self.field.Bind(wx.grid.EVT_GRID_CELL_CHANGED, self.on_cell_changed)
         self.field.Bind(wx.grid.EVT_GRID_SELECT_CELL, self.on_select_cell)
-
         self.field.Bind(wx.EVT_KEY_DOWN, self.on_key_down)
 
+        for type_k, type_v in types.items():
+            self.field.RegisterDataType(type_k, type_v.renderer, type_v.editor)
+
+        # Inject our table message listener
+        process_table_message = self.field.ProcessTableMessage
+        self.field.ProcessTableMessage = lambda message:\
+            process_table_message(message) and self.on_table_message(message)
+
         self.veto_next_select_cell = False
+
+    def on_table_message(self, message=None):
+        # Only apply styles to the rows / cols
+        for col_idx in range(self.table.GetNumberCols()):
+            col = self.mapping[col_idx]
+            if col.width is not None:
+                self.field.SetColSize(col_idx, col.width)
 
     def on_cell_changed(self, evt):
         if self.commit_on == 'cell':
@@ -134,3 +142,11 @@ class GridBinding(object):
             return
 
         event.Skip()
+
+
+class Column(display.Column):
+    def __init__(self, attribute, label, width=None, type_name=None):
+        self.attribute = attribute
+        self.label = label
+        self.width = width
+        self.type_name = type_name
