@@ -4,7 +4,7 @@ import wx.grid
 from mvvm.viewbinding.command import CommandBinding
 from mvvm.viewbinding.display import ListBinding, LabelBinding, \
     StatusBarBinding
-from mvvm.viewbinding.grid2 import GridBinding
+from mvvm.viewbinding.grid import GridBinding
 from mvvm.viewbinding.interactive import CheckBinding, ChoiceBinding, TextBinding, \
     DateBinding, DateTimeBinding, ComboBinding, FileBinding, SliderBinding
 from misc.custom_control import DateTimeCtrl
