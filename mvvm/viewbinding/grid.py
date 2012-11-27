@@ -217,3 +217,34 @@ class ChoiceType(object):
 
         self.editor = self.Editor(choices=choices, provider=provider)
         self.renderer = wx.grid.GridCellStringRenderer()
+
+
+class BoolType(object):
+    class Editor(wx.grid.PyGridCellEditor):
+        def Create(self, parent, id, evtHandler):
+            self.SetControl(wx.CheckBox(parent, id))
+            self.GetControl().PushEventHandler(evtHandler)
+
+        def BeginEdit(self, row, col, grid):
+            self.start_value = grid.Table.GetValueAsObject(row, col)
+            self.Control.Value = self.start_value
+            self.GetControl().SetFocus()
+
+        def Reset(self):
+            self.Control.Value = self.start_value
+
+        def StartingClick(self):
+            self.Control.Value = not self.Control.Value
+
+        def StartingKey(self, evt):
+            if evt.KeyCode == wx.WXK_SPACE:
+                self.Control.Value = not self.Control.Value
+                return
+            evt.Skip()
+
+        def EndEdit(self, row, col, grid, prev):
+            grid.Table.SetValueAsObject(row, col, self.Control.Value)
+
+    def __init__(self):
+        self.editor = self.Editor()
+        self.renderer = wx.grid.GridCellBoolRenderer()
