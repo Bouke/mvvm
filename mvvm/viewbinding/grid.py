@@ -226,12 +226,8 @@ class BoolType(object):
             self.GetControl().PushEventHandler(evtHandler)
 
         def BeginEdit(self, row, col, grid):
-            self.start_value = grid.Table.GetValueAsObject(row, col)
-            self.Control.Value = self.start_value
-            self.GetControl().SetFocus()
-
-        def Reset(self):
-            self.Control.Value = self.start_value
+            self.Control.Value = bool(grid.Table.GetValueAsObject(row, col))
+            wx.CallAfter(grid.DisableCellEditControl)
 
         def StartingClick(self):
             self.Control.Value = not self.Control.Value
