@@ -30,10 +30,6 @@ def bind(field, *args, **kwargs):
         return TextBinding(field, *args, **kwargs)
     elif isinstance(field, wx.Slider):
         return SliderBinding(field, *args, **kwargs)
-    elif isinstance(field, wx.RadioBox):
-        return ChoiceBinding(field, *args, **kwargs)
-    elif isinstance(field, wx.Choice):
-        return ChoiceBinding(field, *args, **kwargs)
     elif isinstance(field, wx.ComboBox):
         return ComboBinding(field, *args, **kwargs)
     elif isinstance(field, wx.CheckBox):
@@ -43,9 +39,9 @@ def bind(field, *args, **kwargs):
     elif isinstance(field, wx.FilePickerCtrl):
         return FileBinding(field, *args, **kwargs)
 
-    #grid2
     elif isinstance(field, wx.grid.Grid):
-        return GridBinding(field, *args, **kwargs)
-
+        raise DeprecationWarning("Use GridBinding directly")
+    elif isinstance(field, wx.RadioBox) or isinstance(field, wx.Choice):
+        raise DeprecationWarning("Use ChoiceBinding directly")
     else:
         raise NotImplementedError('Cannot bind instances of %s' % field.__class__)

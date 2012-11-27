@@ -62,7 +62,6 @@ def setter(name, transparent):
 def wrap_cls(cls, transparent=True):
     """
     Wraps a class as either Wrapped or CachingWrapped.
-
     :rtype: type
     """
     if not cls in cached[transparent]:

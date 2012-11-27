@@ -27,11 +27,11 @@ class CheckBinding(object):
 
 
 class ChoiceBinding(object):
-    def __init__(self, field, instance, trait, choices, readonly=False):
+    def __init__(self, field, trait, choices, readonly=False):
         if hasattr(choices, 'get_choices'):
             choices = OrderedDict(choices.get_choices())
-        self.field, self.instance, self.trait, self.readonly = (
-            field, instance, trait, readonly)
+        self.field, self.trait, self.readonly = (
+            field, trait, readonly)
 
         # choices can be a tuple (instance, trait)
         if isinstance(choices, (list, tuple)) and len(choices) == 2:
@@ -44,8 +44,8 @@ class ChoiceBinding(object):
             self.choices = choices
             self.update_choices()
 
-        instance.on_trait_change(self.update_view, trait, dispatch='ui')
-        self.update_view(new=getattr(instance, trait))
+        trait[0].on_trait_change(self.update_view, trait[1], dispatch='ui')
+        self.update_view(new=getattr(*trait))
         self.update_model(None)
 
         if not readonly:
@@ -68,7 +68,7 @@ class ChoiceBinding(object):
                 self.field.Bind(wx.EVT_RADIOBOX, self.update_model)
         else:
             field.SetItems(self.choices.values())
-        self.update_view(new=getattr(self.instance, self.trait))
+        self.update_view(new=getattr(*self.trait))
 
     def update_view(self, new):
         if len(self.choices) == 0: return
@@ -79,8 +79,8 @@ class ChoiceBinding(object):
     def update_model(self, event):
         if 0 <= self.field.GetSelection() < len(self.choices.keys()):
             value = self.choices.keys() [self.field.GetSelection()]
-            if getattr(self.instance, self.trait) != value:
-                setattr(self.instance, self.trait, value)
+            if getattr(*self.trait) != value:
+                setattr(self.trait[0], self.trait[1], value)
         if event: event.Skip()
 
 
