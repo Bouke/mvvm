@@ -129,14 +129,13 @@ class LabelBinding(object):
 
 
 class StatusBarBinding(object):
-    def __init__(self, field, instance, trait, field_number):
-        self.field, self.instance, self.trait, self.field_number = (
-            field, instance, trait, field_number)
-        instance.on_trait_change(self.update_view, trait, dispatch='ui')
+    def __init__(self, field, trait, field_number):
+        self.field, self.trait, self.field_number = (field, trait, field_number)
+        trait[0].on_trait_change(self.update_view, trait[1], dispatch='ui')
         self.update_view()
 
     def update_view(self):
-        self.field.SetStatusText(getattr(self.instance, self.trait),
+        self.field.SetStatusText(getattr(*self.trait),
             self.field_number)
 
 

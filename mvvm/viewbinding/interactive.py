@@ -6,12 +6,10 @@ import wx
 
 
 class CheckBinding(object):
-    def __init__(self, field, instance, trait, readonly=False,
-                 values=(False, True)):
-        self.field, self.instance, self.trait, self.values = (field, instance,
-                                                              trait, values)
-        instance.on_trait_change(self.update_view, trait, dispatch='ui')
-        self.update_view(getattr(instance, trait))
+    def __init__(self, field, trait, readonly=False, values=(False, True)):
+        self.field, self.trait, self.values = (field, trait, values)
+        trait[0].on_trait_change(self.update_view, trait[1], dispatch='ui')
+        self.update_view(getattr(*trait))
 
         if not readonly:
             field.Bind(wx.EVT_CHECKBOX, self.update_model)
@@ -21,8 +19,8 @@ class CheckBinding(object):
 
     def update_model(self, event):
         value = self.values[self.field.GetValue()]
-        if getattr(self.instance, self.trait) != value:
-            setattr(self.instance, self.trait, value)
+        if getattr(*self.trait) != value:
+            setattr(self.trait[0], self.trait[1], value)
         event.Skip()
 
 
@@ -176,10 +174,10 @@ class SliderBinding(object):
 
 
 class DateTimeBinding(object):
-    def __init__(self, field, instance, trait, readonly=False):
-        self.field, self.instance, self.trait = (field, instance, trait)
-        instance.on_trait_change(self.update_view, trait, dispatch='ui')
-        self.update_view(getattr(instance, trait))
+    def __init__(self, field, trait, readonly=False):
+        self.field, self.trait = (field, trait)
+        trait[0].on_trait_change(self.update_view, trait[1], dispatch='ui')
+        self.update_view(getattr(*trait))
 
         if not readonly:
             field.Bind(wx.EVT_TEXT, self.update_model)
@@ -192,8 +190,8 @@ class DateTimeBinding(object):
 
     def update_model(self, event):
         value = self.field.GetDateTimeValue()
-        if self.field.IsValid() and getattr(self.instance, self.trait) != value:
-            setattr(self.instance, self.trait, value)
+        if self.field.IsValid() and getattr(*self.trait) != value:
+            setattr(self.trait[0], self.trait[1], value)
         event.Skip()
 
 
@@ -224,10 +222,10 @@ class DateBinding(object):
 
 
 class FileBinding(object):
-    def __init__(self, field, instance, trait):
-        self.field, self.instance, self.trait = (field, instance, trait)
-        instance.on_trait_change(self.update_view, trait, dispatch='ui')
-        self.update_view(getattr(instance, trait))
+    def __init__(self, field, trait):
+        self.field, self.trait = (field, trait)
+        trait[0].on_trait_change(self.update_view, trait[1], dispatch='ui')
+        self.update_view(getattr(*trait))
         self.field.Bind(wx.EVT_FILEPICKER_CHANGED, self.update_model)
 
     def update_view(self, new):
@@ -236,5 +234,5 @@ class FileBinding(object):
 
     def update_model(self, event):
         new = event.GetPath()
-        if new != getattr(self.instance, self.trait):
-            setattr(self.instance, self.trait, new)
+        if new != getattr(*self.trait):
+            setattr(self.trait[0], self.trait[1], new)
