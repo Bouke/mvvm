@@ -1,5 +1,6 @@
 import wx
 import wx.grid
+from misc.controls import DateTimeCtrl
 
 from mvvm.viewbinding.command import CommandBinding
 from mvvm.viewbinding.display import ListBinding, LabelBinding, \
@@ -7,7 +8,6 @@ from mvvm.viewbinding.display import ListBinding, LabelBinding, \
 from mvvm.viewbinding.grid import GridBinding
 from mvvm.viewbinding.interactive import CheckBinding, ChoiceBinding, TextBinding, \
     DateBinding, DateTimeBinding, ComboBinding, FileBinding, SliderBinding
-from misc.custom_control import DateTimeCtrl
 
 def bind(field, *args, **kwargs):
     # command
