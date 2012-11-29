@@ -154,10 +154,10 @@ class TextBinding(object):
 
 
 class SliderBinding(object):
-    def __init__(self, field, instance, trait, readonly=False):
-        self.field, self.instance, self.trait = (field, instance, trait)
-        instance.on_trait_change(self.update_view, trait, dispatch='ui')
-        self.update_view(getattr(instance, trait))
+    def __init__(self, field, trait, readonly=False):
+        self.field, self.trait = field, trait
+        trait[0].on_trait_change(self.update_view, trait[1], dispatch='ui')
+        self.update_view(getattr(*trait))
 
         if not readonly:
             field.Bind(wx.EVT_SLIDER, self.update_model)
@@ -168,8 +168,8 @@ class SliderBinding(object):
 
     def update_model(self, event):
         value = self.field.GetValue()
-        if getattr(self.instance, self.trait) != value:
-            setattr(self.instance, self.trait, value)
+        if getattr(*self.trait) != value:
+            setattr(self.trait[0], self.trait[1], value)
         event.Skip()
 
 
@@ -196,14 +196,14 @@ class DateTimeBinding(object):
 
 
 class DateBinding(object):
-    def __init__(self, field, instance, trait, readonly=False):
-        self.field, self.instance, self.trait = (field, instance, trait)
-        instance.on_trait_change(self.update_view, trait, dispatch='ui')
+    def __init__(self, field, trait, readonly=False):
+        self.field, self.trait = field, trait
+        trait[0].on_trait_change(self.update_view, trait[1], dispatch='ui')
 
         # spinner always shows a date, so force a value for the trait
-        value = getattr(self.instance, self.trait) or datetime.datetime.now()
+        value = getattr(*self.trait) or datetime.datetime.now()
         self.update_view(value)
-        setattr(self.instance, self.trait, value)
+        setattr(self.trait[0], self.trait[1], value)
 
         if not readonly:
             field.Bind(wx.EVT_DATE_CHANGED, self.update_model)
@@ -216,8 +216,8 @@ class DateBinding(object):
     def update_model(self, event):
         value = self.field.GetValue()
         value = datetime.datetime.fromtimestamp(value.GetTicks())
-        if getattr(self.instance, self.trait) != value:
-            setattr(self.instance, self.trait, value)
+        if getattr(*self.trait) != value:
+            setattr(self.trait[0], self.trait[1], value)
         event.Skip()
 
 

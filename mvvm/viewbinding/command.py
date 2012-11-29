@@ -14,8 +14,8 @@ class Command(HasTraits):
 
 
 class CommandBinding(object):
-    def __init__(self, field, instance, trait):
-        command = getattr(instance, trait)
+    def __init__(self, field, trait):
+        command = getattr(*trait)
 
         command.on_trait_change(lambda: field.Enable(command.can_execute),
             'can_execute', dispatch='ui')
