@@ -133,10 +133,10 @@ class ComboBinding(object):
 
 
 class TextBinding(object):
-    def __init__(self, field, instance, trait, readonly=False):
-        self.field, self.instance, self.trait = (field, instance, trait)
-        instance.on_trait_change(self.update_view, trait, dispatch='ui')
-        self.update_view(getattr(instance, trait))
+    def __init__(self, field, trait, readonly=False):
+        self.field, self.trait = field, trait
+        trait[0].on_trait_change(self.update_view, trait[1], dispatch='ui')
+        self.update_view(getattr(*trait))
 
         if not readonly:
             field.Bind(wx.EVT_TEXT, self.update_model)
@@ -147,8 +147,8 @@ class TextBinding(object):
 
     def update_model(self, event):
         value = self.field.GetValue()
-        if getattr(self.instance, self.trait) != value:
-            setattr(self.instance, self.trait, value)
+        if getattr(*self.trait) != value:
+            setattr(self.trait[0], self.trait[1], value)
         event.Skip()
 
 
