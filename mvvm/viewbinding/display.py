@@ -3,14 +3,13 @@ import wx
 
 
 class ShowBinding(object):
-    def __init__(self, field, instance, trait, show_if_value=True):
-        self.field, self.instance, self.trait, self.show_if_value = (
-            field, instance, trait, show_if_value)
-        instance.on_trait_change(self.update_view, trait, dispatch='ui')
+    def __init__(self, field, trait, show_if_value=True):
+        self.field, self.trait, self.show_if_value = field, trait, show_if_value
+        trait[0].on_trait_change(self.update_view, trait[1], dispatch='ui')
         self.update_view()
 
     def update_view(self):
-        value = getattr(self.instance, self.trait)
+        value = getattr(*self.trait)
         if type(self.show_if_value) == bool:
             value = bool(value)
         self.field.Show(value == self.show_if_value)
