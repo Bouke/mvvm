@@ -83,12 +83,11 @@ class ChoiceBinding(object):
 
 
 class ComboBinding(object):
-    def __init__(self, field, instance, trait, choice_provider):
-        self.field, self.instance, self.trait, self.choice_provider = (
-            field, instance, trait, choice_provider)
+    def __init__(self, field, trait, choice_provider):
+        self.field, self.trait, self.choice_provider = (field, trait, choice_provider)
         field.Bind(wx.EVT_TEXT, self.on_text)
         field.Bind(wx.EVT_COMBOBOX, self.update_model)
-        self.update_view(getattr(instance, trait))
+        self.update_view(getattr(*trait))
 
     def update_view(self, data):
         text = self.choice_provider.get_display_text(data)
@@ -106,7 +105,7 @@ class ComboBinding(object):
 
         # Remove the current selected option when no text entered
         if not self.field.GetValue():
-            setattr(self.instance, self.trait, None)
+            setattr(self.trait[0], self.trait[1], None)
 
         self.field.Freeze()
 
@@ -128,8 +127,8 @@ class ComboBinding(object):
     def update_model(self, event):
         if event.Selection != -1:
             value = self.field.GetClientData(event.Selection)
-            if getattr(self.instance, self.trait) != value:
-                setattr(self.instance, self.trait, value)
+            if getattr(*self.trait) != value:
+                setattr(self.trait[0], self.trait[1], value)
         event.Skip()
 
 
