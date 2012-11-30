@@ -83,6 +83,8 @@ def wrap(obj, transparent=True):
 
     :rtype: Wrapped
     """
+    if obj is None:
+        raise TypeError('Cannot wrap None')
     return wrap_cls(obj.__class__, transparent)(obj)
 
 def unwrap(obj):
