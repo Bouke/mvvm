@@ -27,14 +27,13 @@ class ShowBinding(object):
 
 
 class EnabledBinding(object):
-    def __init__(self, field, instance, trait, enabled_if_value=True):
-        self.field, self.instance, self.trait, self.enabled_if_value = (
-            field, instance, trait, enabled_if_value)
-        instance.on_trait_change(self.update_view, trait, dispatch='ui')
+    def __init__(self, field, trait, enabled_if_value=True):
+        self.field, self.trait, self.enabled_if_value = field, trait, enabled_if_value
+        trait[0].on_trait_change(self.update_view, trait[1], dispatch='ui')
         self.update_view()
 
     def update_view(self):
-        value = getattr(self.instance, self.trait)
+        value = getattr(*self.trait)
         # True-ish / False-ish
         if self.enabled_if_value == True or self.enabled_if_value == False:
             value = bool(value)
@@ -42,14 +41,13 @@ class EnabledBinding(object):
 
 
 class FocusBinding(object):
-    def __init__(self, field, instance, trait, focus_if_value=True):
-        self.field, self.instance, self.trait, self.focus_if_value = (
-            field, instance, trait, focus_if_value)
-        instance.on_trait_change(self.update_view, trait, dispatch='ui')
+    def __init__(self, field, trait, focus_if_value=True):
+        self.field, self.trait, self.focus_if_value = (field, trait, focus_if_value)
+        trait[0].on_trait_change(self.update_view, trait[1], dispatch='ui')
         self.update_view()
 
     def update_view(self):
-        if getattr(self.instance, self.trait) == self.focus_if_value:
+        if getattr(*self.trait) == self.focus_if_value:
             self.field.SetFocus()
 
 
@@ -138,10 +136,10 @@ class StatusBarBinding(object):
 
 
 class TitleBinding(object):
-    def __init__(self, field, instance, trait):
-        self.field, self.instance, self.trait = (field, instance, trait)
-        instance.on_trait_change(self.update_view, trait, dispatch='ui')
+    def __init__(self, field, trait):
+        self.field, self.trait = field, trait
+        trait[0].on_trait_change(self.update_view, trait[1], dispatch='ui')
         self.update_view()
 
     def update_view(self):
-        self.field.SetTitle(str(getattr(self.instance, self.trait)))
+        self.field.SetTitle(str(getattr(*self.trait)))
