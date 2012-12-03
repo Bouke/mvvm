@@ -140,11 +140,10 @@ class GridBinding(object):
             # Create a new row after the current row. On success, move the
             # cursor to the left-most cell of the new row.
             if self.field.GridCursorRow == self.table.GetNumberRows() - 1:
-                if not hasattr(self.table, 'CreateRow'):
-                    return
                 self.table.CreateRow()
-            self.field.SetGridCursor(self.field.GridCursorRow + 1, 0)
-            self.field.MakeCellVisible(self.field.GridCursorRow, 0)
+            if self.field.GridCursorRow < self.table.GetNumberRows() - 1:
+                self.field.SetGridCursor(self.field.GridCursorRow + 1, 0)
+                self.field.MakeCellVisible(self.field.GridCursorRow, 0)
 
             # Move to the left-most cell of the next row.
             return
@@ -175,12 +174,12 @@ class ChoiceType(object):
             if self.provider:
                 self.SetControl(wx.ComboBox(parent, id))
                 self.binding = ComboBinding(self.GetControl(),
-                                            self.trait, 'value',
+                                            (self.trait, 'value'),
                                             self.provider)
             else:
                 self.SetControl(wx.Choice(parent, id))
                 self.binding = ChoiceBinding(self.GetControl(),
-                                             self.trait, 'value',
+                                             (self.trait, 'value'),
                                              self.choices)
             self.GetControl().PushEventHandler(evtHandler)
 
@@ -210,7 +209,7 @@ class ChoiceType(object):
             if self.provider:
                 value = self.GetControl().GetClientData(self.GetControl().Selection)
             else:
-                value = self.choices.keys()[self.GetControl().Selection]
+                value = self.binding.choices.keys()[self.GetControl().Selection]
             grid.GetTable().SetValueAsObject(row, col, value)
 
     def __init__(self, choices=None, provider=None):
