@@ -17,6 +17,14 @@ class Wrapped(HasTraits):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __repr__(self):
+        cls_self = self.__class__
+        cls_wrapped = self._wrapped.__class__
+        return '<%s.%s object at %s, wrapping %s.%s object at %s>' % (
+            cls_self.__module__, cls_self.__name__, hex(id(self)),
+            cls_wrapped.__module__, cls_wrapped.__name__, hex(id(self._wrapped)),
+        )
+
 
 class CachingWrapped(Wrapped):
     def __init__(self, wrapped, **kwargs):

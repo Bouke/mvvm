@@ -38,21 +38,23 @@ class TableHelperMixin(object):
 
 
 class ListTable(PyGridTableBase, TableHelperMixin):
-    def __init__(self, trait, mapping=None):
+    def __init__(self, trait, mapping=None, commit_on='grid'):
         super(ListTable, self).__init__()
         self._trait = trait
         self.mapping = mapping
+        self.commit_on = commit_on
         self.creator = getattr(self._trait[0], '%s_create' % self._trait[1], None)
         self.saver = getattr(self._trait[0], '%s_save' % self._trait[1], None)
         self.deleter = getattr(self._trait[0], '%s_delete' % self._trait[1], None)
         self._setup()
-        self.commit_on = 'grid'
 
     def _setup(self):
         self._trait[0].on_trait_change(self._trait_listener,
-                                       self._trait[1]+'.+', dispatch='ui')
+                                       '{0}.+'.format(self._trait[1]),
+                                       dispatch='ui')
         self._trait[0].on_trait_change(self._items_listener,
-                                       self._trait[1]+'_items', dispatch='ui')
+                                       '{0}, {0}_items'.format(self._trait[1]),
+                                       dispatch='ui')
         self._deleted = []
         self._created = []
         self._modified = []

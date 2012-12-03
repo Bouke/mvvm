@@ -23,14 +23,14 @@ class GridBinding(object):
                 return evt.Veto()
             evt.Skip()
     """
-    def __init__(self, field, trait, mapping, types=None, commit_on='row'):
+    def __init__(self, field, table, mapping=None, types=None, commit_on='row'):
         self.field = field
-        self.trait = trait
+        self.table = table
         self.commit_on = commit_on
-        self.mapping = [Column.init(col) for col in mapping]
+        self.mapping = [Column.init(col) for col in mapping or []]
         self.types = types or {}
 
-        self.table = getattr(trait[0], trait[1]+"_table")
+        self.table = getattr(*table)
         self.table.mapping = self.mapping
         self.table.commit_on = commit_on
         self.table.grid = self.field
@@ -54,9 +54,10 @@ class GridBinding(object):
     def on_table_message(self, message=None):
         # Only apply styles to the rows / cols
         for col_idx in range(self.table.GetNumberCols()):
-            col = self.mapping[col_idx]
-            if col.width is not None:
-                self.field.SetColSize(col_idx, col.width)
+            if col_idx < len(self.mapping):
+                col = self.mapping[col_idx]
+                if col.width is not None:
+                    self.field.SetColSize(col_idx, col.width)
 
     def on_cell_changed(self, evt):
         if self.commit_on == 'cell':
@@ -139,6 +140,8 @@ class GridBinding(object):
             # Create a new row after the current row. On success, move the
             # cursor to the left-most cell of the new row.
             if self.field.GridCursorRow == self.table.GetNumberRows() - 1:
+                if not hasattr(self.table, 'CreateRow'):
+                    return
                 self.table.CreateRow()
             self.field.SetGridCursor(self.field.GridCursorRow + 1, 0)
             self.field.MakeCellVisible(self.field.GridCursorRow, 0)
