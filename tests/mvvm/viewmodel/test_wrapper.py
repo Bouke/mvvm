@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import unittest
+import mock
 from traits.has_traits import HasTraits
 from traits.traits import CTrait
 from model import Skater
@@ -44,6 +45,24 @@ class TestWrap(unittest.TestCase):
         obj2.first_name = 'Botje'
         self.assertEqual(1, len(calls), 'Callback was not executed')
         self.assertEqual(calls[0], 'Botje')
+
+    def test_sqlalchemy(self):
+        skater = Skater()
+        wrapped_skater = wrap(skater)
+
+        checker = mock.MagicMock()
+        def listener(trait, name, old, new):
+            checker(trait=trait, name=name, old=old, new=new)
+
+        wrapped_skater.on_trait_change(listener, 'first_name,last_name')
+
+        wrapped_skater.first_name = 'Bouke'
+        self.assert_(checker.called)
+        checker.reset_mock()
+
+        skater.last_name = 'Haarsma'
+        self.assert_(checker.called)
+        checker.reset_mock()
 
 if __name__ == '__main__':
     unittest.main()
