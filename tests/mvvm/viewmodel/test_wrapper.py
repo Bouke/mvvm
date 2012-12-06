@@ -3,7 +3,7 @@ import unittest
 import mock
 from traits.has_traits import HasTraits
 from traits.traits import CTrait
-from model import Skater
+from common.models import Skater
 from mvvm.viewmodel.wrapper import wrap, wrap_cls
 
 class TestWrap(unittest.TestCase):

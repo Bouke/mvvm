@@ -1,7 +1,7 @@
 import traits.api as traits
 import wx
 from wx.grid import PyGridTableBase
-import model
+import sqlalchemy
 from mvvm.viewmodel.wrapper import wrap
 
 
