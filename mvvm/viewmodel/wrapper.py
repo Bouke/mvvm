@@ -120,12 +120,10 @@ def session_flush(session, unit_of_work):
             for wrapper in object._strong_obj._wrappers:
                 wrapper = wrapper()
                 if not wrapper:
-                    if name in wrapper.changes:
-                        del wrapper.changes[name]
-                    wrapper.trait_property_changed(name, object.dict[name])
-                elif isinstance(wrapper, CachingWrapped):
-                    pass
-                else:
-                    for name in object.committed_state:
-                        wrapper.trait_property_changed(name,
-                                                       getattr(object._strong_obj, name))
+                    continue
+                for name in object.committed_state:
+                    if isinstance(wrapper, CachingWrapped):
+                        if name in wrapper.changes:
+                            del wrapper.changes[name]
+                    wrapper.trait_property_changed(name,
+                                                   getattr(object._strong_obj, name))
