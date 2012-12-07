@@ -1,10 +1,15 @@
 from __future__ import absolute_import
 import unittest
+
 import mock
 from traits.has_traits import HasTraits
 from traits.traits import CTrait
-from common.models import Skater
+
+from common.models import Skater, Country
+from app import Base
+from mvvm.viewmodel import wrapper
 from mvvm.viewmodel.wrapper import wrap, wrap_cls
+from tests import engine, Session
 
 class TestWrap(unittest.TestCase):
 
