@@ -52,20 +52,30 @@ class TestWrap(unittest.TestCase):
         self.assertEqual(calls[0], 'Botje')
 
     def test_sqlalchemy(self):
-        skater = Skater()
+        connection = engine.connect()
+        trans = connection.begin()
+        session = Session(bind=connection)
+
+        skater = Skater(
+            first_name='Bouke',
+            last_name='Haarsma',
+            gender='M',
+            country=Country(code='NED', name='Netherlands'),
+        )
         wrapped_skater = wrap(skater)
 
         checker = mock.MagicMock()
         def listener(trait, name, old, new):
             checker(trait=trait, name=name, old=old, new=new)
+        wrapped_skater.on_trait_change(listener)
 
-        wrapped_skater.on_trait_change(listener, 'first_name,last_name')
-
-        wrapped_skater.first_name = 'Bouke'
+        session.add(skater)
+        session.commit()
         self.assert_(checker.called)
         checker.reset_mock()
 
-        skater.last_name = 'Haarsma'
+        skater.first_name = 'Botje'
+        session.commit()
         self.assert_(checker.called)
         checker.reset_mock()
 

@@ -1,7 +1,5 @@
 from weakref import ref
-from sqlalchemy import event
-from sqlalchemy.orm import class_mapper
-from sqlalchemy.orm.attributes import InstrumentedAttribute
+from sqlalchemy.orm import Query
 from traits.api import HasTraits, Instance
 from traits.traits import Property
 
@@ -69,43 +67,12 @@ def setter(name, transparent):
     if transparent:
         def _set(self, value):
             setattr(self._wrapped, name, unwrap(value))
+            self.trait_property_changed(name, value)
     else:
         def _set(self, value):
             self.changes[name] = value
             self.trait_property_changed(name, value)
     return _set
-
-# @todo document this method
-def sa_listener(name):
-    def _listener(target, value, oldvalue, initiator):
-        if not hasattr(target, '_wrappers'):
-            return
-        for wrapper in target._wrappers:
-            wrapper = wrapper()
-            if not wrapper:
-                continue # weakref
-            elif isinstance(wrapper, CachingWrapped):
-                if name in wrapper.changes and wrapper.changes[name] == value:
-                    del wrapper.changes[name]
-                else:
-                    setattr(wrapper, name, value)
-            else:
-                if getattr(target, name) != value:
-                    wrapper.trait_property_changed(name, oldvalue, value)
-    return _listener
-
-# @todo document this method
-def setup_sa_listeners(cls):
-    if cls in cached_classes[True] or cls in cached_classes[False]:
-        return
-    try:
-        class_mapper(cls) # fails if not an sqlalchemy class
-
-        for name in [n for n in dir(cls) if not n.startswith('_')]:
-            column = getattr(cls, name)
-            if isinstance(column, InstrumentedAttribute):
-                event.listen(column, 'set', sa_listener(name))
-    except: pass
 
 def wrap_cls(cls, transparent=True):
     """
@@ -113,7 +80,10 @@ def wrap_cls(cls, transparent=True):
     :rtype: type
     """
     if not cls in cached_classes[transparent]:
-        setup_sa_listeners(cls)
+        # This 'magically' adds the `competitions` class variable to `Event`.
+        # @todo inspect where sqlalchemy inserts this class variable to make
+        # it less magical.
+        Query(cls)
 
         cls_name = '%sWrapped%s' % ('Transparent' if transparent else 'Caching',
                                     cls.__name__)
@@ -141,3 +111,21 @@ def unwrap(obj):
     while isinstance(obj, Wrapped):
         obj = obj._wrapped
     return obj
+
+def session_flush(session, unit_of_work):
+    for mapper in unit_of_work.mappers.values():
+        for object in mapper:
+            if not hasattr(object._strong_obj, '_wrappers'):
+                continue
+            for wrapper in object._strong_obj._wrappers:
+                wrapper = wrapper()
+                if not wrapper:
+                    if name in wrapper.changes:
+                        del wrapper.changes[name]
+                    wrapper.trait_property_changed(name, object.dict[name])
+                elif isinstance(wrapper, CachingWrapped):
+                    pass
+                else:
+                    for name in object.committed_state:
+                        wrapper.trait_property_changed(name,
+                                                       getattr(object._strong_obj, name))
