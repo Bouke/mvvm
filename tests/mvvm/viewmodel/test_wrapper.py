@@ -2,11 +2,11 @@ from __future__ import absolute_import
 import unittest
 
 import mock
+from sqlalchemy import event
 from traits.has_traits import HasTraits
 from traits.traits import CTrait
 
 from common.models import Skater, Country
-from app import Base
 from mvvm.viewmodel import wrapper
 from mvvm.viewmodel.wrapper import wrap, wrap_cls
 from tests import engine, Session
@@ -55,6 +55,7 @@ class TestWrap(unittest.TestCase):
         connection = engine.connect()
         trans = connection.begin()
         session = Session(bind=connection)
+        event.listen(session, 'after_flush', wrapper.session_flush)
 
         skater = Skater(
             first_name='Bouke',
