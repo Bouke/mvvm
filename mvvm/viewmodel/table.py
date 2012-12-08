@@ -1,7 +1,6 @@
 import traits.api as traits
 import wx
 from wx.grid import PyGridTableBase
-import sqlalchemy
 from mvvm.viewmodel.wrapper import wrap
 
 
@@ -93,15 +92,26 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         return self.mapping[col_idx].label
 
     def GetValue(self, row_idx, col_idx):
+        """
+        Value to be shown in the associated grid.
+
+        Should not be used to populate the editor, use `GetValueAsObject`
+        instead.
+        """
         attribute = self.mapping[col_idx].attribute
         row = self.GetRow(row_idx)
         value = getattr(row, attribute)
         disp_attr = 'get_%s_display' % attribute
         if hasattr(row, disp_attr) and callable(getattr(row, disp_attr)):
             value = getattr(row, disp_attr)(value)
+        if value is None:
+            return u''
         return unicode(value)
 
     def GetValueAsObject(self, row_idx, col_idx):
+        """
+        Python object to be used in a cell editor.
+        """
         attribute = self.mapping[col_idx].attribute
         row = self.GetRow(row_idx)
         return getattr(row, attribute)

@@ -6,7 +6,7 @@ import wx
 import traits.api as traits
 from traits.trait_notifiers import set_ui_handler
 
-import mvvm.viewbinding.table as subject
+import mvvm.viewmodel.table as subject
 
 set_ui_handler( wx.CallAfter )
 
