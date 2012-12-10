@@ -121,9 +121,21 @@ def session_flush(session, unit_of_work):
                 wrapper = wrapper()
                 if not wrapper:
                     continue
-                for name in object.committed_state:
+
+                # `object.committed_state` contains the committed state of a
+                # variable, but is only populated for modified attributes.
+                # While the trait notifications are send, the committed state
+                # might change in the trait notification handlers. After
+                # each notification, the committed state is re-evaluated to
+                # cover all new modifications.
+                notified = set()
+                changes = set(object.committed_state)
+                while changes:
+                    name = changes.pop()
                     if isinstance(wrapper, CachingWrapped):
                         if name in wrapper.changes:
                             del wrapper.changes[name]
                     wrapper.trait_property_changed(name,
                                                    getattr(object._strong_obj, name))
+                    notified.add(name)
+                    changes = set(object.committed_state) - notified
