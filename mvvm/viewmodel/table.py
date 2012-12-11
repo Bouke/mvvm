@@ -117,7 +117,7 @@ class ListTable(PyGridTableBase, TableHelperMixin):
         return getattr(row, attribute)
 
     def GetTypeName(self, row_idx, col_idx):
-        return self.mapping[col_idx].type_name
+        return self.mapping[col_idx].type_name or wx.grid.GRID_VALUE_STRING
 
     def GetRow(self, row_idx):
         return self._index[row_idx]

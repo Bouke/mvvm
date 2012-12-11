@@ -181,7 +181,6 @@ class ChoiceType(object):
                 self.binding = ChoiceBinding(self.GetControl(),
                                              (self.trait, 'value'),
                                              self.choices)
-            self.GetControl().PushEventHandler(evtHandler)
 
         def SetSize(self, rect):
             # Adjust for minimal height of the control
@@ -198,7 +197,7 @@ class ChoiceType(object):
             else:
                 self.GetControl().SetStringSelection(value)
             self.GetControl().SetFocus()
-            if self.provider:
+            if wx.Platform == '__WXMAC__' and self.provider:
                 self.GetControl().Popup()
 
         def Reset(self):
@@ -207,7 +206,10 @@ class ChoiceType(object):
 
         def EndEdit(self, row, col, grid, prev):
             if self.provider:
-                value = self.GetControl().GetClientData(self.GetControl().Selection)
+                if self.Control.Selection >= 0:
+                    value = self.Control.GetClientData(self.Control.Selection)
+                else:
+                    value = None
             else:
                 value = self.binding.choices.keys()[self.GetControl().Selection]
             grid.GetTable().SetValueAsObject(row, col, value)
