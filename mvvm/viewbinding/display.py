@@ -88,6 +88,8 @@ class ListBinding(object):
 
     def update_values(self):
         self.field.SetItemCount(self.table.GetNumberRows())
+        if wx.Platform == '__WXMSW__':
+            self.field.Refresh()
 
     def on_get_item_text(self, row_idx, col_idx):
         return self.table.GetValue(row_idx, col_idx)
