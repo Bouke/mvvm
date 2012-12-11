@@ -246,3 +246,48 @@ class BoolType(object):
     def __init__(self):
         self.editor = self.Editor()
         self.renderer = wx.grid.GridCellBoolRenderer()
+
+
+class TimeType(object):
+    class Renderer(wx.grid.PyGridCellRenderer):
+        def Draw(self, grid, attr, dc, rect, row, col, isSelected):
+            # Ported from https://github.com/wxWidgets/wxWidgets/blob/master/src/generic/gridctrl.cpp#L50
+            fg = grid.SelectionForeground
+            if grid.Enabled:
+                if isSelected:
+                    if grid.HasFocus():
+                        bg = grid.SelectionBackground
+                    else:
+                        bg = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNSHADOW)
+                else:
+                    bg = attr.BackgroundColour
+                    fg = attr.TextColour
+            else:
+                bg = wx.SystemSettings.GetColour(wx.SYS_COLOUR_BTNFACE)
+
+            dc.SetClippingRect(rect)
+            dc.SetFont(attr.GetFont())
+            dc.SetTextBackground(bg)
+            dc.SetTextForeground(fg)
+            dc.SetBrush(wx.Brush(bg, wx.SOLID))
+            dc.SetPen(wx.TRANSPARENT_PEN)
+            dc.DrawRectangleRect(rect)
+
+            value = grid.Table.GetValueAsObject(row, col)
+            text = '%02d:%06.3f' % divmod(value, 60) if value is not None else ''
+
+            width, height = dc.GetTextExtent(text)
+            x = rect.x + max(rect.width - width, 4) - 2
+            dc.DrawText(text, x, rect.y+1)
+
+            if width > rect.width-2:
+                width, height = dc.GetTextExtent(u'\u2026')
+                x = rect.x+1 + rect.width-2 - width
+                dc.DrawRectangle(x, rect.y+1, width+1, height)
+                dc.DrawText(u'\u2026', x, rect.y+1)
+
+            dc.DestroyClippingRegion()
+
+    def __init__(self):
+        self.editor = wx.grid.GridCellTextEditor()
+        self.renderer = self.Renderer()
