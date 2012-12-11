@@ -19,7 +19,7 @@ class TestWrap(unittest.TestCase):
 
         obj = Skater(first_name='Bouke')
         wrapped = wrap(obj, True)
-        self.assertEquals(wrapped, obj)
+        self.assertEqual(wrapped, obj)
         self.assertIsInstance(wrapped, wrapped_cls)
         self.assertIsInstance(wrapped, HasTraits)
 
