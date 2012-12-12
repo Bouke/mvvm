@@ -1,3 +1,5 @@
+from decimal import Decimal
+import re
 import wx
 import wx.grid
 import traits.api as traits
@@ -251,6 +253,52 @@ class BoolType(object):
 
 
 class TimeType(object):
+    @staticmethod
+    def time_to_text(time):
+        return '%02d:%06.3f' % divmod(time, 60) if time is not None else ''
+
+    class Editor(wx.grid.PyGridCellEditor):
+        def Create(self, parent, id, evtHandler):
+            # windows hack? wx.TE_RICH2
+            style=wx.TE_PROCESS_ENTER|wx.TE_PROCESS_TAB|wx.NO_BORDER
+            self.Control = wx.TextCtrl(parent, id, style=style)
+            self.Control.PushEventHandler(evtHandler)
+
+        def BeginEdit(self, row, col, grid):
+            self.start_value = grid.Table.GetValueAsObject(row, col)
+            self.Control.Value = TimeType.time_to_text(self.start_value)
+            self.Control.SetInsertionPointEnd()
+            self.Control.SelectAll()
+            self.Control.SetFocus()
+
+        def Reset(self):
+            self.Control.Value = TimeType.time_to_text(self.start_value)
+            self.Control.SetInsertionPointEnd()
+
+        def EndEdit(self, row, col, grid, prev):
+            text = self.Control.Value
+            m = re.match(r'([0-9]{0,2})[ .:]?([0-9]{2})(([0-9]{3})|[. ]([0-9]{1,3}))', text)
+            if not m:
+                return False
+
+            value = Decimal('%s.%s' % (m.group(2), m.group(4) or m.group(5)))
+            value += int(m.group(1) or 0) * 60
+
+            if value == self.start_value:
+                return False
+
+            grid.Table.SetValueAsObject(row, col, value)
+
+        def StartingKey(self, evt):
+            key = evt.UnicodeKey
+            if key == wx.WXK_DELETE:
+                self.Control.Remove(0, 1)
+            elif key == wx.WXK_BACK:
+                pos = self.Control.GetLastPosition()
+                self.Control.Remove(pos-1, pos)
+            else:
+                self.Control.WriteText(unichr(key))
+
     class Renderer(wx.grid.PyGridCellRenderer):
         def Draw(self, grid, attr, dc, rect, row, col, isSelected):
             # Ported from https://github.com/wxWidgets/wxWidgets/blob/master/src/generic/gridctrl.cpp#L50
@@ -291,5 +339,5 @@ class TimeType(object):
             dc.DestroyClippingRegion()
 
     def __init__(self):
-        self.editor = wx.grid.GridCellTextEditor()
+        self.editor = self.Editor()
         self.renderer = self.Renderer()
