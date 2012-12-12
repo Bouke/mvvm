@@ -258,11 +258,22 @@ class TimeType(object):
         return '%02d:%06.3f' % divmod(time, 60) if time is not None else ''
 
     class Editor(wx.grid.PyGridCellEditor):
+        # Partly ported from wxGridCellTextEditor
         def Create(self, parent, id, evtHandler):
-            # windows hack? wx.TE_RICH2
-            style=wx.TE_PROCESS_ENTER|wx.TE_PROCESS_TAB|wx.NO_BORDER
+            style = wx.TE_PROCESS_ENTER|wx.TE_PROCESS_TAB|wx.NO_BORDER
+            if wx.Platform == '__WXMSW__':
+                style |= wx.TE_RICH2
             self.Control = wx.TextCtrl(parent, id, style=style)
             self.Control.PushEventHandler(evtHandler)
+
+        def SetSize(self, rect):
+            if wx.Platform == '__WXMSW__':
+                rect.x += 2 if rect.x == 0 else 3
+                rect.y += 2 if rect.y == 0 else 3
+                rect.width -= 2
+                rect.height -= 2
+            super(TimeType.Editor, self).SetSize(rect)
+
 
         def BeginEdit(self, row, col, grid):
             self.start_value = grid.Table.GetValueAsObject(row, col)
