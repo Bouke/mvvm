@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from collections import OrderedDict
-import datetime, time
+import datetime, time, re
 
 import wx
 
@@ -85,16 +85,18 @@ class ChoiceBinding(object):
 class ComboBinding(object):
     def __init__(self, field, trait, choice_provider):
         self.field, self.trait, self.choice_provider = (field, trait, choice_provider)
-        field.Bind(wx.EVT_TEXT, self.on_text)
-        field.Bind(wx.EVT_COMBOBOX, self.update_model)
-        self.update_view(getattr(*trait))
 
-    def update_view(self, data):
+        field.Bind(wx.EVT_TEXT, self._on_text)
+        field.Bind(wx.EVT_CHAR, self._on_char)
+        field.Bind(wx.EVT_COMBOBOX, self._on_combobox)
+        self._update_view(getattr(*trait))
+
+    def _update_view(self, data):
         text = self.choice_provider.get_display_text(data)
         self.field.SetValue(text)
         self.field.SetStringSelection(text)
 
-    def on_text(self, event):
+    def _on_text(self, event):
         # Once a selection has been made, do not modify the items of this
         # control. EVT_TEXT is also fired on Windows when making a
         # selection, which would change items listed and finally resulting
@@ -124,12 +126,43 @@ class ComboBinding(object):
         self.field.Thaw()
         event.Skip()
 
-    def update_model(self, event):
+    def _on_combobox(self, event):
         if event.Selection != -1:
-            value = self.field.GetClientData(event.Selection)
-            if getattr(*self.trait) != value:
-                setattr(self.trait[0], self.trait[1], value)
+            self._update_model(event.Selection)
         event.Skip()
+
+    def _update_model(self, idx):
+        value = self.field.GetClientData(idx)
+        if getattr(*self.trait) != value:
+            setattr(self.trait[0], self.trait[1], value)
+
+    def _on_char(self, evt):
+        """
+        Provides auto completion.
+
+        As characters are received, the keys are written to the field. This
+        triggers `_on_text`, which updates the list of choices. Then this
+        method checks if there is an item starting with the typed text. If so,
+        this item is selected and the remaining text next to the cursor text
+        selected.
+        """
+        if evt.UnicodeKey not in (wx.WXK_NONE, wx.WXK_BACK, wx.WXK_ESCAPE):
+            self.field.WriteText(unichr(evt.UnicodeKey))
+            # re.I for case-insensitive text matching
+            text = re.compile(self.field.GetValue(), re.I)
+            for item_idx, item in enumerate(self.field.Items):
+                if not text.match(item):
+                    continue
+                pos = self.field.InsertionPoint
+                self.field.SetSelection(item_idx)
+                self._update_model(item_idx)
+
+                # Restore cursor position and set selection to appended part
+                self.field.SetInsertionPoint(pos)
+                wx._core.TextEntry.SetSelection(self.field, pos, self.field.LastPosition)
+                break
+        else:
+            evt.Skip()
 
 
 class TextBinding(object):
