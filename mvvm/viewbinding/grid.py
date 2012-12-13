@@ -183,6 +183,7 @@ class ChoiceType(object):
                 self.binding = ChoiceBinding(self.GetControl(),
                                              (self.trait, 'value'),
                                              self.choices)
+            self.Control.PushEventHandler(evtHandler)
 
         def SetSize(self, rect):
             # Adjust for minimal height of the control
@@ -198,9 +199,21 @@ class ChoiceType(object):
                 self.GetControl().SetValue(value)
             else:
                 self.GetControl().SetStringSelection(value)
+
+            # Windows kills the control if the event handler is enabled, so
+            # it needs to be temporarily disabled when setting the focus.
+            if wx.Platform == '__WXMSW__':
+                self.Control.EventHandler.SetEvtHandlerEnabled(False)
+
             self.GetControl().SetFocus()
+
+            # Windows does not like having the popup opened while typing, so
+            # only show it on OSX.
             if wx.Platform == '__WXMAC__' and self.provider:
                 self.GetControl().Popup()
+
+            if wx.Platform == '__WXMSW__':
+                self.Control.EventHandler.SetEvtHandlerEnabled(True)
 
         def Reset(self):
             # @todo use wx_patch [ESC] to reset value to original text
@@ -273,7 +286,6 @@ class TimeType(object):
                 rect.width -= 2
                 rect.height -= 2
             super(TimeType.Editor, self).SetSize(rect)
-
 
         def BeginEdit(self, row, col, grid):
             self.start_value = grid.Table.GetValueAsObject(row, col)
