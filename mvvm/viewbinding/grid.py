@@ -196,7 +196,8 @@ class ChoiceType(object):
             # @todo use Table.GetValueAsObject
             value = grid.GetCellValue(row, col)
             if self.provider:
-                self.GetControl().SetValue(value)
+                self.Control.Selection = -1
+                self.Control.StringSelection = value
             else:
                 self.GetControl().SetStringSelection(value)
 
@@ -214,6 +215,11 @@ class ChoiceType(object):
 
             if wx.Platform == '__WXMSW__':
                 self.Control.EventHandler.SetEvtHandlerEnabled(True)
+
+        def StartingKey(self, evt):
+            # Post start key to control's event handler. Only the combobox
+            # seems to care.
+            self.Control.ProcessEvent(evt)
 
         def Reset(self):
             # @todo use wx_patch [ESC] to reset value to original text
