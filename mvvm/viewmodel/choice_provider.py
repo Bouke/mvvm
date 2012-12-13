@@ -25,7 +25,7 @@ class Model(Base):
         self.limit = limit
 
     def get_choices(self, partial_text=None):
-        if not partial_text:
+        if partial_text is not None and not partial_text:
             return []
         query = self.query
         if callable(query):
