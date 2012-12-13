@@ -12,7 +12,7 @@ class Base(object):
 
 
 class Model(Base):
-    def __init__(self, model=None, field=None, query=None, limit=None):
+    def __init__(self, model=None, field=None, query=None, limit=100):
         if model is None and field is not None and hasattr(field, 'class_'):
             model = field.class_
         if not query:
@@ -25,7 +25,7 @@ class Model(Base):
         self.limit = limit
 
     def get_choices(self, partial_text=None):
-        if partial_text is not None and len(partial_text) < 2:
+        if not partial_text:
             return []
         query = self.query
         if callable(query):
