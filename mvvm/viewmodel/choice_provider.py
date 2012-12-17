@@ -12,7 +12,7 @@ class Base(object):
 
 
 class Model(Base):
-    def __init__(self, model=None, field=None, query=None, limit=100):
+    def __init__(self, model=None, field=None, query=None, limit=None):
         if model is None and field is not None and hasattr(field, 'class_'):
             model = field.class_
         if not query:
