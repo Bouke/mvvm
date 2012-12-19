@@ -193,13 +193,13 @@ class ChoiceType(object):
             super(ChoiceType.Editor, self).SetSize(rect)
 
         def BeginEdit(self, row, col, grid):
-            # @todo use Table.GetValueAsObject
-            value = grid.GetCellValue(row, col)
+            self.start_value = unicode(grid.GetTable().GetValueAsObject(row, col))
             if self.provider:
                 self.Control.Selection = -1
-                self.Control.StringSelection = value
+                self.Control.StringSelection = self.start_value
             else:
-                self.GetControl().SetStringSelection(value)
+                self.start_value = self.choices[self.start_value]
+                self.Control.SetStringSelection(self.start_value)
 
             # Windows kills the control if the event handler is enabled, so
             # it needs to be temporarily disabled when setting the focus.
@@ -222,16 +222,23 @@ class ChoiceType(object):
             self.Control.ProcessEvent(evt)
 
         def Reset(self):
-            # @todo use wx_patch [ESC] to reset value to original text
-            raise NotImplementedError()
+            if self.provider:
+                self.Control.Selection = -1
+                self.Control.StringSelection = self.start_value
+            else:
+                self.Control.SetStringSelection(self.start_value)
 
         def EndEdit(self, row, col, grid, prev):
             if self.provider:
+                if self.Control.Value == self.start_value:
+                    return
                 if self.Control.Selection >= 0:
                     value = self.Control.GetClientData(self.Control.Selection)
                 else:
                     value = None
             else:
+                if self.Control.StringSelection == self.start_value:
+                    return
                 value = self.binding.choices.keys()[self.GetControl().Selection]
             grid.GetTable().SetValueAsObject(row, col, value)
 
