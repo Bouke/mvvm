@@ -193,12 +193,15 @@ class ChoiceType(object):
             super(ChoiceType.Editor, self).SetSize(rect)
 
         def BeginEdit(self, row, col, grid):
-            self.start_value = unicode(grid.GetTable().GetValueAsObject(row, col))
+            value = grid.GetTable().GetValueAsObject(row, col)
             if self.provider:
+                self.start_value = unicode(value or '')
+                # First, unset previous selection. Otherwise the ComboBinding
+                # would not start updating the choices when the Value is set.
                 self.Control.Selection = -1
-                self.Control.StringSelection = self.start_value
+                self.Control.Value = self.start_value
             else:
-                self.start_value = self.choices[self.start_value]
+                self.start_value = self.choices[value]
                 self.Control.SetStringSelection(self.start_value)
 
             # Windows kills the control if the event handler is enabled, so
@@ -222,9 +225,10 @@ class ChoiceType(object):
             self.Control.ProcessEvent(evt)
 
         def Reset(self):
+            # Reset the control to the begin state, see BeginEdit.
             if self.provider:
                 self.Control.Selection = -1
-                self.Control.StringSelection = self.start_value
+                self.Control.Value = self.start_value
             else:
                 self.Control.SetStringSelection(self.start_value)
 
