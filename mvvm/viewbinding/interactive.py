@@ -49,11 +49,6 @@ class ChoiceBinding(object):
         if not readonly:
             field.Bind(wx.EVT_CHOICE, self.update_model)
 
-            # Also allows binding to comboboxes, for example in grids where
-            # a comboctrl is used as a choicectrl (without editing), but binding
-            # to a combobinding is not desired with fixed-list choices.
-            field.Bind(wx.EVT_COMBOBOX, self.update_model)
-
     def update_choices(self):
         field = self.field
         if isinstance(field, wx.RadioBox):
