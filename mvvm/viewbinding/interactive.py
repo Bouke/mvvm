@@ -68,6 +68,15 @@ class ChoiceBinding(object):
             field.SetItems(self.choices.values())
         self.update_view(new=getattr(*self.trait))
 
+        # resize frame if Minimalistic
+        if hasattr(self.field.TopLevelParent, 'update_minimal_size'):
+            # First, invalidate all parents
+            parent = self.field.Parent
+            while parent:
+                parent.InvalidateBestSize()
+                parent = parent.Parent
+            self.field.TopLevelParent.update_minimal_size()
+
     def update_view(self, new):
         if len(self.choices) == 0: return
         try:
