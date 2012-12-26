@@ -38,3 +38,13 @@ class Model(Base):
 
     def get_display_text(self, data):
         return unicode(data or '')
+
+class Function(Base):
+    def __init__(self, function=None):
+        self.function = function
+
+    def get_choices(self, partial_text):
+        return self.function()
+
+    def get_display_text(self, data):
+        return unicode(data or '')
