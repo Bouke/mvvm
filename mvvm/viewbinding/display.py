@@ -80,10 +80,18 @@ class ListBinding(object):
             self.field.InsertColumn(col_idx, col.label, col.align, col.width)
 
         self.update_values()
+
+        # When evt_list events fire, the underlying selection on the model is
+        # changed. In turn, this triggers the updating of the view, creating
+        # an endless loop. To stop this, the `__stop_updating_selection` is
+        # set for as long as one of the listeners is updating, allowing
+        # execution of the first listener (of the loop).
+        self.__stop_updating_selection = False
+
         field.Bind(wx.EVT_LIST_ITEM_SELECTED, self.on_view_selection_changed)
         field.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.on_view_selection_changed)
         trait[0].on_trait_change(self.on_model_selection_changed,
-                                 trait[1]+'_selection[]')
+                                 trait[1]+'_selection[]', dispatch='ui')
 
     def update_values(self):
         self.field.SetItemCount(self.table.GetNumberRows())
@@ -102,17 +110,25 @@ class ListBinding(object):
         return indexes
 
     def on_view_selection_changed(self, event):
+        if self.__stop_updating_selection:
+            return
+        self.__stop_updating_selection = True
         setattr(self.trait[0], self.trait[1]+'_selection',
                 [self.table.GetRow(idx) for idx in self.get_selected_indexes()])
         event.Skip()
+        self.__stop_updating_selection = False
 
     def on_model_selection_changed(self, new):
+        if self.__stop_updating_selection:
+            return
+        self.__stop_updating_selection = True
         cur = self.get_selected_indexes()
         new = set([self.table.GetRowIndex(obj) for obj in new])
         for idx in cur-new:  # deselect
             self.field.SetItemState(idx, 0, wx.LIST_STATE_SELECTED|wx.LIST_STATE_FOCUSED)
         for idx in new-cur:  # select
             self.field.SetItemState(idx, wx.LIST_STATE_SELECTED, wx.LIST_STATE_SELECTED)
+        self.__stop_updating_selection = False
 
 
 class LabelBinding(object):
