@@ -200,6 +200,8 @@ class ChoiceType(object):
                 # would not start updating the choices when the Value is set.
                 self.Control.Selection = -1
                 self.Control.Value = self.start_value
+                self.Control.SetInsertionPointEnd()
+                self.Control.SelectAll()
             else:
                 self.start_value = self.choices[value]
                 self.Control.SetStringSelection(self.start_value)
