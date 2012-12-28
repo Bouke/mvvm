@@ -224,7 +224,8 @@ class Detail(CloseMixin, HasTraits):
         return Command(cancel)
 
     def _get_object(self):
-        if not self._object_proxy: raise NotImplementedError
+        if not self._object_proxy:
+            raise NotImplementedError('Object has not been set')
         return self._object_proxy
 
     def _set_object(self, object):
