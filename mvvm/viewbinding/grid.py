@@ -203,7 +203,10 @@ class ChoiceType(object):
                 self.Control.SetInsertionPointEnd()
                 self.Control.SelectAll()
             else:
-                self.start_value = self.choices[value]
+                # self.choices might be a reference to a trait and cannot be
+                # used here; the binding will parse the choices and is used
+                # for determining the correct display value.
+                self.start_value = self.binding.choices[value]
                 self.Control.SetStringSelection(self.start_value)
 
             # Windows kills the control if the event handler is enabled, so
